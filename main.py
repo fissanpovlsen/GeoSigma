@@ -18,7 +18,7 @@ from get_tTEM_theme import get_tTEM_theme
 ### Additional functions
 def make_test_area():
     nx, ny = 100, 100
-    Nlay = 11
+    Nlay = 31
     NPL = 4
     Npreq = 3
     region = 'Jylland'
@@ -158,11 +158,6 @@ def plot_gammalog_theme(Grid, layers=None, mask_value=100000):
     plt.tight_layout()
     plt.show()
 
-
-import matplotlib.pyplot as plt
-import numpy as np
-import cmcrameri.cm as cmc  # Scientific colormaps
-
 def plot_theme(Grid, theme_name="Theme", layers=None, mask_value=100000, cmap=cmc.batlow, vmax=None):
     """
     Plot selected layers from any theme grid, masking out specific values.
@@ -208,8 +203,7 @@ if __name__ == "__main__":
     print('Preparing Geophysics Region-Specific Uncertainty Themes')
     print('get PACES theme')
     #PACES_themes, PACES_c = get_PACES_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
-    
-    #plot_paces_theme(PACES_themes, layers=[6,7,8,9,10])
+    #plot_theme(PACES_themes, theme_name="REFSEIS", layers=[6,7,8,9,10], mask_value=100000, cmap=cmc.batlow, vmax=6)
     print('get_PACES_theme...Done')
 
     print('get_GAMMALOG_theme...')
@@ -223,17 +217,21 @@ if __name__ == "__main__":
     print('get_RESLOG_theme...Done')
 
     print('get_REFSEIS_theme...')
-    REFSEIS_themes,REFSEIS_c = get_REFSEIS_theme(XS,YS,terrain,complexity,region,1,Npreq,NPL,Nlay)
+    #REFSEIS_themes,REFSEIS_c = get_REFSEIS_theme(XS,YS,terrain,complexity,region,1,Npreq,NPL,Nlay)
+    #plot_theme(REFSEIS_themes, theme_name="REFSEIS", layers=[6,7,8,9], mask_value=100000, cmap=cmc.batlow, vmax=100)
     print('get_REFSEIS_theme...Done')
 
     print('get_fewTEM_theme...')
     #fewTEM_themes, fewTEM_c = get_fewTEM_theme(XS,YS,terrain,complexity,region,1,Npreq,NPL,Nlay)
+    #plot_theme(fewTEM_themes, theme_name="fewTEM", layers=[6,7,8,9], mask_value=100000, cmap=cmc.batlow, vmax=100)
     print('get_fewTEM_theme...Done')
 
     print('get_manyTEM_theme...')
     #manyTEM_themes, manyTEM_c = get_manyTEM_theme(XS,YS,terrain,complexity,region,1,Npreq,NPL,Nlay)
+    #plot_theme(manyTEM_themes, theme_name="manyTEM", layers=[4,10,15,20,30], mask_value=100000, cmap=cmc.batlow, vmax=1000)
     print('get_manyTEM_theme...Done')
 
     print('get_tTEM_theme...')
-    #tTEM_themes, tTEM_c = get_tTEM_theme(UTM_X, UTM_Y, terrain, complexity, reg, include_peatlands, Npreq, NPL, Nlay)
+    tTEM_themes, tTEM_c = get_tTEM_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
+    plot_theme(tTEM_themes, theme_name="tTEM", layers=[4,10,15,20,30], mask_value=100000, cmap=cmc.batlow, vmax=1000)
     print('get_tTEM_theme...Done')

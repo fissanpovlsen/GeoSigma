@@ -77,6 +77,7 @@ def get_REFSEIS_theme(UTM_X, UTM_Y, terrain, complexity, reg, include_peatlands,
                 filt = filt1 & filt2
 
                 if np.any(filt):
+                    
                     local_xs = xs[filt]
                     local_ys = ys[filt]
                     local_thicks = MThicks[filt]
