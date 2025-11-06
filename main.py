@@ -218,12 +218,12 @@ if __name__ == "__main__":
     print('get_GAMMALOG_theme...Done')
 
     print('get_RESLOG_theme...')
-    RESLOG_themes,RESLOG_c = get_RESLOG_theme(XS,YS,terrain,complexity,region,1,Npreq,NPL,Nlay)
-    plot_theme(RESLOG_themes, theme_name="RESLOG", layers=[5,6,7,8], mask_value=100000, cmap=cmc.batlow, vmax=6)
+    #RESLOG_themes,RESLOG_c = get_RESLOG_theme(XS,YS,terrain,complexity,region,1,Npreq,NPL,Nlay)
+    #plot_theme(RESLOG_themes, theme_name="RESLOG", layers=[5,6,7,8], mask_value=100000, cmap=cmc.batlow, vmax=6)
     print('get_RESLOG_theme...Done')
 
     print('get_REFSEIS_theme...')
-    #REFSEIS_themes,REFSEIS_c = get_REFSEIS_theme(XS,YS,terrain,complexity,region,1,Npreq,NPL,Nlay)
+    REFSEIS_themes,REFSEIS_c = get_REFSEIS_theme(XS,YS,terrain,complexity,region,1,Npreq,NPL,Nlay)
     print('get_REFSEIS_theme...Done')
 
     print('get_fewTEM_theme...')
