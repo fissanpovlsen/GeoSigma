@@ -68,7 +68,7 @@ currange = ran_ref
 cor_noise_rat = 0.7
 
 G, Cm, Cd, d_obs, m0 = local_kriging_setup_img(
-    GLOBAL, i_buf, ip_buf, curvariance, currange, cor_noise_rat, dx=dx, dy=dy
+    GLOBAL, i_buf, ip_buf, curvariance, currange, cor_noise_rat, dx=dx, dy=dy, verbose=True
 )
 
 # --- Run linear least-squares inversion ---

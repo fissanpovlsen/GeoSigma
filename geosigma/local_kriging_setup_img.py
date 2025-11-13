@@ -1,7 +1,7 @@
 import numpy as np
 from geosigma.precal_cov import precal_cov
 
-def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_noise_rat, dx=100, dy=100):
+def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_noise_rat, dx=100, dy=100, verbose=False):
     """
     Set up local kriging matrices for image-based inversion or estimation.
 
@@ -78,5 +78,10 @@ def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_no
 
     # --- Prior mean model ---
     m0 = np.zeros(len(i_buf_local))
+    
+    if verbose:
+        print("local_kriging_setup_img: Setup all kriging matrices")
+
+    
 
     return G, Cm, Cd, d_obs, m0
