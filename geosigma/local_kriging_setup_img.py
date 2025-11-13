@@ -1,93 +1,82 @@
-# geosigma/local_kriging_setup_img.py
 import numpy as np
-from .precal_cov import precal_cov
-import matplotlib.pyplot as plt
+from geosigma.precal_cov import precal_cov
 
-def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_noise_rat, plot=False):
+def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_noise_rat, dx=100, dy=100):
     """
-    Sets up input matrices for local kriging:
-    G, Cm, Cd, d_obs, m0
-    
+    Set up local kriging matrices for image-based inversion or estimation.
+
     Parameters
     ----------
     GLOBAL : dict
-        Contains keys 'xx_norm', 'yy_norm', 'img_dobs', 'img_unc'
-        All values should be NumPy arrays.
-    i_buf : array-like, bool or 0/1
-        Buffer mask for total nodes
-    ip_buf : array-like, bool or 0/1
-        Buffer mask for observed nodes
+        Global data container with normalized grids, uncertainties, and data.
+        Must contain keys: "xx_norm", "yy_norm", "img_unc", "img_dobs".
+    i_buf : array-like
+        Indices of model (grid) cells to include in the local estimation domain.
+        Typically represents unmasked cells within the local buffer region.
+    ip_buf : array-like
+        Indices of conditioning (data) points used for kriging.
+        Usually corresponds to interpreted or measured data points.
     curvariance : float
-        Sill of the covariance
+        Variance (sill) of the statistical model.
     currange : float
-        Range parameter for isotropic Gaussian covariance
+        Range parameter for the spatial covariance model.
     cor_noise_rat : float
-        Correlation ratio for Cd
-    plot : bool, optional
-        If True, plot G, Cm, Cd matrices for sanity check
-    
+        Correlation ratio between measurement noise and spatially correlated error.
+    dx : float, optional
+        Physical grid spacing in x-direction (in meters). Default is 100.
+    dy : float, optional
+        Physical grid spacing in y-direction (in meters). Default is 100.
+
     Returns
     -------
     G : ndarray
+        Design matrix mapping model parameters to data points.
     Cm : ndarray
+        Model covariance matrix.
     Cd : ndarray
+        Data covariance matrix (includes correlated and uncorrelated components).
     d_obs : ndarray
-    m0 : float
+        Observation vector corresponding to ip_buf.
+    m0 : ndarray
+        Prior mean model (currently zero vector).
     """
-
-    # --- Local buffers ---
-    i_buf_local = np.array(i_buf, dtype=bool)
-    ip_buf_local = np.array(ip_buf, dtype=bool)
     
-    # --- G matrix ---
-    G = np.eye(np.sum(i_buf_local), dtype=float)
-    G = G[ip_buf_local, :]
+    # Active points only
+    i_buf_local = np.where(i_buf)[0]  # indices of active points
+    
 
+    # --- Forward matrix G ---
+    G = np.eye(len(i_buf_local))[ip_buf[i_buf_local], :]  # use only active cells
+    
     # --- Model covariance Cm ---
+    # Coordinates of model cells (scaled by dx, dy)
     coords_cm = np.column_stack((
-        GLOBAL["xx_norm"][i_buf_local] * 100,
-        GLOBAL["yy_norm"][i_buf_local] * 100
+        GLOBAL["xx_norm"][i_buf] * dx,
+        GLOBAL["yy_norm"][i_buf] * dy
     ))
     statmod_var = f"{curvariance} Gau({currange})"
     Cm, _ = precal_cov(coords_cm, coords_cm, statmod_var)
-    Cm = np.asarray(Cm, dtype=float)
 
     # --- Data covariance Cd ---
+    # Coordinates of conditioning data points
     coords_cd = np.column_stack((
-        GLOBAL["xx_norm"][ip_buf_local] * 100,
-        GLOBAL["yy_norm"][ip_buf_local] * 100
+        GLOBAL["xx_norm"][ip_buf] * dx,
+        GLOBAL["yy_norm"][ip_buf] * dy
     ))
     statmod_noi = f"{curvariance} Gau({currange})"
     Cd_shape, _ = precal_cov(coords_cd, coords_cd, statmod_noi)
-    Cd_shape = np.asarray(Cd_shape, dtype=float)
 
-    img_unc_vec = np.asarray(GLOBAL["img_unc"][ip_buf_local], dtype=float)
+    # Observation uncertainties as diagonal matrix
+    img_unc_vec = np.asarray(GLOBAL["img_unc"][ip_buf], dtype=float)
     Cd_diag = np.diag(img_unc_vec)
 
-    # Build full Cd
+    # Combine correlated and uncorrelated components
     Cd = Cd_diag @ (cor_noise_rat * Cd_shape + (1 - cor_noise_rat) * np.eye(len(Cd_shape))) @ Cd_diag
 
     # --- Observed data ---
-    d_obs = np.asarray(GLOBAL["img_dobs"][ip_buf_local], dtype=float)
+    d_obs = np.asarray(GLOBAL["img_dobs"][ip_buf], dtype=float)
 
-    # --- Prior mean ---
-    m0 = 0.0
-
-    # --- Optional plotting for sanity check ---
-    if plot:
-        fig, axs = plt.subplots(1, 3, figsize=(15,5))
-        im0 = axs[0].imshow(G, origin='lower', cmap='viridis')
-        axs[0].set_title("G matrix")
-        plt.colorbar(im0, ax=axs[0])
-
-        im1 = axs[1].imshow(Cm, origin='lower', cmap='viridis')
-        axs[1].set_title("Cm (model covariance)")
-        plt.colorbar(im1, ax=axs[1])
-
-        im2 = axs[2].imshow(Cd, origin='lower', cmap='viridis')
-        axs[2].set_title("Cd (data covariance)")
-        plt.colorbar(im2, ax=axs[2])
-
-        plt.show()
+    # --- Prior mean model ---
+    m0 = np.zeros(len(i_buf_local))
 
     return G, Cm, Cd, d_obs, m0
