@@ -14,18 +14,21 @@ from get_REFSEIS_theme import get_REFSEIS_theme
 from get_fewTEM_theme import get_fewTEM_theme
 from get_manyTEM_theme import get_manyTEM_theme
 from get_tTEM_theme import get_tTEM_theme
+from get_MEP_theme import get_MEP_theme
+from get_SkyTEM_theme import get_SkyTEM_theme
+from get_PACEP_theme import get_PACEP_theme
 
 ### Additional functions
 def make_test_area():
     nx, ny = 100, 100
-    Nlay = 31
+    Nlay = 12
     NPL = 4
     Npreq = 3
     region = 'Jylland'
 
     #PACES TEST AREA
-    #XS = np.arange(546050, 563051, nx)
-    #YS = np.arange(6217050, 6227051, ny)
+    #XS = np.arange(546050, 579051, nx)
+    #YS = np.arange(6200050, 6237051, ny)
 
     #GAMMA LOG TEST AREA
     XS = np.arange(527050, 545051, nx)
@@ -232,6 +235,23 @@ if __name__ == "__main__":
     print('get_manyTEM_theme...Done')
 
     print('get_tTEM_theme...')
-    tTEM_themes, tTEM_c = get_tTEM_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
-    plot_theme(tTEM_themes, theme_name="tTEM", layers=[4,10,15,20,30], mask_value=100000, cmap=cmc.batlow, vmax=1000)
+    #tTEM_themes, tTEM_c = get_tTEM_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
+    #plot_theme(tTEM_themes, theme_name="tTEM", layers=[4,5,6,7,8,9], mask_value=100000, cmap=cmc.batlow, vmax=1000)
     print('get_tTEM_theme...Done')
+
+
+    print('get_MEP_theme...')
+    #MEP_themes, MEP_c = get_MEP_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
+    #plot_theme(MEP_themes, theme_name="MEP", layers=[9,10,11], mask_value=100000, cmap=cmc.batlow, vmax=5)
+    print('get_MEP_theme...Done')
+
+    print('get_SkyTEM_theme...')
+    #SkyTEM_themes, SkyTEM_c = get_SkyTEM_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
+    #plot_theme(SkyTEM_themes, theme_name="SkyTEM", layers=[5,6,7], mask_value=100000, cmap=cmc.batlow, vmax=20)
+    print('get_SkyTEM_theme...Done')
+
+
+    print('get_PACEP_theme...')
+    PACEP_themes, PACEP_c = get_PACEP_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
+    plot_theme(PACEP_themes, theme_name="PACEP", layers=[6,7,8,9], mask_value=100000, cmap=cmc.batlow, vmax=20)
+    print('get_PACEP_theme...Done')
