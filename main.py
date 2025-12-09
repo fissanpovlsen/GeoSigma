@@ -4,6 +4,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cmcrameri.cm as cmc
+from matplotlib.colors import LogNorm
+from concurrent.futures import ProcessPoolExecutor
+import time
 
 ### Import functions from python scripts
 from import_complexitymap import import_complexitymap
@@ -21,7 +24,7 @@ from get_PACEP_theme import get_PACEP_theme
 ### Additional functions
 def make_test_area():
     nx, ny = 100, 100
-    Nlay = 12
+    Nlay = 11
     NPL = 4
     Npreq = 3
     region = 'Jylland'
@@ -98,6 +101,41 @@ def debug_grd_file(filename):
         data_section_length_bytes = f.read(4)
         data_section_length = struct.unpack('i', data_section_length_bytes)[0]
         print(f"Data Section Length: {data_section_length} bytes ({data_section_length / 1024:.2f} KB)")
+
+
+def timed_theme(name, func, args):
+    start = time.perf_counter()
+    themes, c = func(*args)
+    end = time.perf_counter()
+    runtime = end - start
+    print(f"{name} completed in {runtime:.2f} seconds")
+    return name, themes, c, runtime
+
+
+def run_all_themes(XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay):
+    tasks = [
+        ("PACES", get_PACES_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("GAMMALOG", get_GAMMALOG_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("RESLOG", get_RESLOG_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("REFSEIS", get_REFSEIS_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("fewTEM", get_fewTEM_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("manyTEM", get_manyTEM_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("tTEM", get_tTEM_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("MEP", get_MEP_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("SkyTEM", get_SkyTEM_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+        ("PACEP", get_PACEP_theme, [XS, YS, terrain, complexity, region, include_peatlands, Npreq, NPL, Nlay]),
+    ]
+
+
+    results = {}
+    with ProcessPoolExecutor() as executor:
+        futures = [executor.submit(timed_theme, name, func, args) for name, func, args in tasks]
+        for future in futures:
+            name, themes, c, runtime = future.result()
+            results[name] = {"themes": themes, "c": c, "runtime": runtime}
+    return results
+
+
 
 
 def plot_paces_theme(Grid, layers=None, mask_value=100000):
@@ -184,12 +222,15 @@ def plot_theme(Grid, theme_name="Theme", layers=None, mask_value=100000, cmap=cm
     if len(layers) == 1:
         axes = [axes]
 
+
+    norm = LogNorm(vmin=.1, vmax=vmax)
+
     for ax, layer in zip(axes, layers):
-        im = ax.imshow(masked_Grid[:, :, layer], cmap=cmap, origin='lower', vmax=vmax)
+        im = ax.imshow(masked_Grid[:, :, layer], cmap=cmap, origin='lower', norm=norm)
         ax.set_title(f'{theme_name} - Layer {layer}')
         ax.set_xlabel('X index')
         ax.set_ylabel('Y index')
-        fig.colorbar(im, ax=ax, orientation='vertical', label='Uncertainty')
+        fig.colorbar(im, ax=ax, orientation='vertical', label='Uncertainty (log scale)')
 
     plt.tight_layout()
     plt.show()
@@ -206,7 +247,7 @@ if __name__ == "__main__":
     print('Preparing Geophysics Region-Specific Uncertainty Themes')
     print('get PACES theme')
     #PACES_themes, PACES_c = get_PACES_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
-    #plot_theme(PACES_themes, theme_name="REFSEIS", layers=[6,7,8,9,10], mask_value=100000, cmap=cmc.batlow, vmax=6)
+    #plot_theme(PACES_themes, theme_name="REFSEIS", layers=[6,7,8], mask_value=100000, cmap=cmc.batlow, vmax=6)
     print('get_PACES_theme...Done')
 
     print('get_GAMMALOG_theme...')
@@ -239,7 +280,6 @@ if __name__ == "__main__":
     #plot_theme(tTEM_themes, theme_name="tTEM", layers=[4,5,6,7,8,9], mask_value=100000, cmap=cmc.batlow, vmax=1000)
     print('get_tTEM_theme...Done')
 
-
     print('get_MEP_theme...')
     #MEP_themes, MEP_c = get_MEP_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
     #plot_theme(MEP_themes, theme_name="MEP", layers=[9,10,11], mask_value=100000, cmap=cmc.batlow, vmax=5)
@@ -250,8 +290,38 @@ if __name__ == "__main__":
     #plot_theme(SkyTEM_themes, theme_name="SkyTEM", layers=[5,6,7], mask_value=100000, cmap=cmc.batlow, vmax=20)
     print('get_SkyTEM_theme...Done')
 
-
     print('get_PACEP_theme...')
-    PACEP_themes, PACEP_c = get_PACEP_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
-    plot_theme(PACEP_themes, theme_name="PACEP", layers=[6,7,8,9], mask_value=100000, cmap=cmc.batlow, vmax=20)
+    #PACEP_themes, PACEP_c = get_PACEP_theme(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
+    #plot_theme(PACEP_themes, theme_name="PACEP", layers=[6,7,8,9], mask_value=100000, cmap=cmc.batlow, vmax=20)
     print('get_PACEP_theme...Done')
+   
+
+
+    print('RUN all functions in parallel')
+    all_results = run_all_themes(XS, YS, terrain, complexity, region, 1, Npreq, NPL, Nlay)
+
+    # Print summary
+    print("\nSummary of runtimes:")
+    for name, data in all_results.items():
+        print(f"{name}: {data['runtime']:.2f} seconds")
+
+
+    print('Make uncertainty maps')
+    AllThemes = np.full((all_results['PACES']['themes'].shape[0], all_results['PACES']['themes'].shape[1], Nlay, 10), np.inf)
+    AllThemes[:,:,:,0] = all_results['PACES']['themes']
+    AllThemes[:,:,:,1] = all_results['GAMMALOG']['themes']
+    AllThemes[:,:,:,2] = all_results['RESLOG']['themes']
+    AllThemes[:,:,:,3] = all_results['REFSEIS']['themes']
+    AllThemes[:,:,:,4] = all_results['fewTEM']['themes']
+    AllThemes[:,:,:,5] = all_results['manyTEM']['themes']
+    AllThemes[:,:,:,6] = all_results['tTEM']['themes']
+    AllThemes[:,:,:,7] = all_results['MEP']['themes']
+    AllThemes[:,:,:,8] = all_results['SkyTEM']['themes']
+    AllThemes[:,:,:,9] = all_results['PACEP']['themes']
+
+    final_variance_themes = 1.0 / np.sum(1.0 / AllThemes, axis=3)
+    plot_theme(final_variance_themes, theme_name="Final", layers=[6,7,8,9], mask_value=100000, cmap=cmc.batlow, vmax=10000)
+
+    print('End')
+
+
