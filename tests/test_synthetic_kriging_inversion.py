@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from geosigma.local_kriging_setup_img import local_kriging_setup_img
-from geosigma.matlab_helpers import matlab_meshgrid
-from plotting.add_in_between_gridlines import add_in_between_gridlines
-from geosigma.precal_cov import precal_cov
-from geosigma.get_reals_cholesky import get_reals_cholesky
-from geosigma.least_squares_inversion import least_squares_inversion
+from geosigma import local_kriging_setup_img
+from utils import matlab_meshgrid
+from plotting import add_in_between_gridlines
+from geosigma import precal_cov
+from geosigma import get_reals_cholesky
+from geosigma import least_squares_inversion
 
 np.random.seed(42)
 

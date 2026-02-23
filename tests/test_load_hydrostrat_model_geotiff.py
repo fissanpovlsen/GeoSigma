@@ -1,15 +1,21 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 10 13:07:52 2026
+
+@author: rbm
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Project imports
-from utils import load_esri_ascii_grid, grid_coordinates_from_esri_meta
+from utils import load_geotiff_grid,grid_coordinates_from_esri_meta
 from plotting import add_in_between_gridlines
 
 
 # --- Load topo surface ---
-z_topo, meta = load_esri_ascii_grid(
-    "tests/data/Funen_hydrostrat_model/surfaces/topo.asc"
+z_topo, meta = load_geotiff_grid(
+    "tests/data/Jutland_hydrostrat_model/top_surface.tif"
 )
 
 # --- Build coordinates ---
@@ -30,11 +36,11 @@ im = ax.imshow(
     cmap="terrain"
 )
 
-ax.set_title("Topography (Funen)")
+ax.set_title("Topography (Jutland, GeoTIFF)")
 ax.set_xlabel("Easting [m]")
 ax.set_ylabel("Northing [m]")
 
-#add_in_between_gridlines(ax, x, y)
+add_in_between_gridlines(ax, x, y)
 
 cbar = fig.colorbar(im, ax=ax)
 cbar.set_label("Elevation [m]")
