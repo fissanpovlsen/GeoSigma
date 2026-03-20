@@ -15,7 +15,7 @@ from .deformat_variogram import deformat_variogram
 from .local_kriging_setup_img import local_kriging_setup_img
 from .least_squares_inversion import least_squares_inversion
 from .get_reals_cholesky import get_reals_cholesky
-from .inpox import draw_points_inpox,ftot_laplace,laplacian_2d
+from .inpox import draw_points_inpox,ftot_laplace,laplacian_2d,visualize_transfer_function
 
 
 
@@ -29,5 +29,6 @@ __all__ = [
     "least_squares_inversion",
     "draw_points_inpox",
     "ftot_laplace",
-    "laplacian_2d"
+    "laplacian_2d",
+    "visualize_transfer_function"
 ]

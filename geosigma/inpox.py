@@ -6,6 +6,7 @@ Created on Wed Feb 11 16:53:40 2026
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # -------------------------------------------------
@@ -145,3 +146,84 @@ def draw_points_inpox(surface, ext_vals, dx=1.0, dy=1.0, wells=None):
     points = np.random.rand(*surface.shape) < plap
 
     return points, plap, lapl, plap_extra
+
+
+def visualize_transfer_function(surface, ext_vals, dx=1.0, dy=1.0, lap_max=10):
+    """
+    Visualize INPOX transfer function against Laplacian distribution.
+
+    Parameters
+    ----------
+    surface : 2D ndarray
+        Input surface
+    ext_vals : dict
+        Transfer function parameters (must contain a, b, c, d, e, g, p0)
+    dx, dy : float
+        Grid spacing
+    lap_max : float
+        Maximum Laplacian value for plotting
+
+    Returns
+    -------
+    lap_surface : ndarray
+        Absolute Laplacian values (flattened)
+    ftot_test : ndarray
+        Transfer function values for test range
+    """
+
+    # -------------------------------------------------
+    # 1. Compute Laplacian
+    # -------------------------------------------------
+    lap_surface = np.abs(laplacian_2d(surface, dx=dx, dy=dy))
+    lap_surface = lap_surface.ravel()
+
+    # Remove NaNs (important for real surfaces)
+    lap_surface = lap_surface[~np.isnan(lap_surface)]
+
+    # -------------------------------------------------
+    # 2. Compute transfer function curve
+    # -------------------------------------------------
+    lap_test = np.linspace(0, lap_max, 200)
+
+    ftot_test = ftot_laplace(
+        lap_test,
+        ext_vals["a"],
+        ext_vals["b"],
+        ext_vals["c"],
+        ext_vals["d"],
+        ext_vals["e"],
+        ext_vals["g"],
+    )
+
+    # -------------------------------------------------
+    # 3. Plot
+    # -------------------------------------------------
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+
+    # Histogram of Laplacian
+    ax1.hist(
+        lap_surface,
+        bins=np.linspace(0, lap_max, 100),
+        density=True,
+        alpha=0.5,
+        label="Surface Laplacians",
+    )
+    ax1.set_xlabel("Laplacian")
+    ax1.set_ylabel("Density")
+    ax1.legend(loc="upper left")
+
+    # Transfer function
+    ax2 = ax1.twinx()
+    ax2.plot(
+        lap_test,
+        ftot_test + ext_vals["p0"],
+        linewidth=2,
+        label="ftot + p0",
+    )
+    ax2.set_ylabel("Probability")
+    ax2.legend(loc="upper right")
+
+    plt.title("Transfer function vs Laplacian distribution")
+    plt.tight_layout()
+    plt.show()
+    
