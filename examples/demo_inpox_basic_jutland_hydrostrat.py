@@ -1,14 +1,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from utils import load_geotiff_grid, grid_coordinates_from_esri_meta
-from geosigma import draw_points_inpox, ftot_laplace
+from geosigma import draw_points_inpox, ftot_laplace,visualize_transfer_function
 
+#%% ============================================================
 # --- Load surface ---
-#z, meta = load_geotiff_grid("tests/data/Jutland_hydrostrat_model/top_surface.tif")
-z, meta = load_geotiff_grid("tests/data/Jutland_hydrostrat_model/layer_4_bottom.tif")
+z, meta = load_geotiff_grid("tests/data/Jutland_hydrostrat_model/top_surface.tif")
+#z, meta = load_geotiff_grid("tests/data/Jutland_hydrostrat_model/layer_4_bottom.tif")
 x, y, xx, yy = grid_coordinates_from_esri_meta(meta)
 
-# --- Parameters ---
+# --- INPOX Parameters ---
 ext_vals = {
     "p0": 0.1,
     "a": 0.5,
@@ -21,20 +22,19 @@ ext_vals = {
     "y0": meta["yllcorner"],
 }
 
-# --- Compute transfer function ---
-lap_test = np.linspace(0, 10, 200)
-ftot_test = ftot_laplace(
-    lap_test,
-    ext_vals["a"],
-    ext_vals["b"],
-    ext_vals["c"],
-    ext_vals["d"],
-    ext_vals["e"],
-    ext_vals["g"],
-)
+
+#%% ============================================================
+# Figure 1: Vizualize the chosen transfer function
+# ============================================================
+visualize_transfer_function(z, ext_vals, dx=1.0, dy=1.0, lap_max=10)
 
 
+
+#%% ============================================================
 # --- Run INPOX sampling ---
+# ============================================================
+
+
 points, plap, lapl, plap_extra = draw_points_inpox(z, ext_vals, dx=meta["cellsize"])
 
 lap_surface = lapl.ravel()
@@ -42,33 +42,9 @@ actual_draw_percent = 100 * np.sum(points) / points.size
 print(f"Actual draw percentage: {actual_draw_percent:.2f} %")
 
 
-# ============================================================
-# Figure 1: Transfer function + Laplacian distribution
-# ============================================================
-fig, ax1 = plt.subplots(figsize=(8, 5))
-
-ax1.hist(
-    lap_surface,
-    bins=np.linspace(0,10,99),
-    density=True,
-    alpha=0.5,
-    label="Surface Laplacians",
-)
-ax1.set_xlabel("Laplacian")
-ax1.set_ylabel("Density")
-ax1.legend(loc="upper left")
-
-ax2 = ax1.twinx()
-ax2.plot(lap_test, ftot_test + ext_vals["p0"], label="ftot + p0")
-ax2.set_ylabel("Probability contribution")
-ax2.legend(loc="upper right")
-
-plt.title("Transfer function vs Laplacian distribution")
-plt.tight_layout()
-plt.show()
 
 
-# ============================================================
+#%% ============================================================
 # Figure 2: Spatial results (2x2)
 # ============================================================
 fig, axes = plt.subplots(2, 3, figsize=(12, 8))
