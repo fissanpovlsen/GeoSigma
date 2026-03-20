@@ -144,4 +144,4 @@ def draw_points_inpox(surface, ext_vals, dx=1.0, dy=1.0, wells=None):
     # --- Draw random points ---
     points = np.random.rand(*surface.shape) < plap
 
-    return points, plap, lapl
+    return points, plap, lapl, plap_extra
