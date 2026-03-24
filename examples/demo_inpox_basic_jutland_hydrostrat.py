@@ -3,10 +3,10 @@ import numpy as np
 from utils import load_geotiff_grid, grid_coordinates_from_esri_meta
 from geosigma import draw_points_inpox, ftot_laplace,visualize_transfer_function
 
-#%% ============================================================
+# ============================================================
 # --- Load surface ---
-z, meta = load_geotiff_grid("tests/data/Jutland_hydrostrat_model/top_surface.tif")
-#z, meta = load_geotiff_grid("tests/data/Jutland_hydrostrat_model/layer_4_bottom.tif")
+z, meta = load_geotiff_grid("examples/data/Jutland_hydrostrat_model/top_surface.tif")
+#z, meta = load_geotiff_grid("examples/data/Jutland_hydrostrat_model/layer_4_bottom.tif")
 x, y, xx, yy = grid_coordinates_from_esri_meta(meta)
 
 # --- INPOX Parameters ---
@@ -23,14 +23,14 @@ ext_vals = {
 }
 
 
-#%% ============================================================
+# ============================================================
 # Figure 1: Vizualize the chosen transfer function
 # ============================================================
 visualize_transfer_function(z, ext_vals, dx=1.0, dy=1.0, lap_max=10)
 
 
 
-#%% ============================================================
+# ============================================================
 # --- Run INPOX sampling ---
 # ============================================================
 
@@ -44,7 +44,7 @@ print(f"Actual draw percentage: {actual_draw_percent:.2f} %")
 
 
 
-#%% ============================================================
+# ============================================================
 # Figure 2: Spatial results (2x2)
 # ============================================================
 fig, axes = plt.subplots(2, 3, figsize=(12, 8))
@@ -69,11 +69,23 @@ im3 = axes[1, 0].imshow(plap,vmin=0,vmax=1)
 axes[1, 0].set_title("Final probability normalized")
 fig.colorbar(im3, ax=axes[1, 0])
 
-
 # --- Sampled points ---
 im4 = axes[1, 1].imshow(points)
 axes[1, 1].set_title(f"Sampled points ({actual_draw_percent:.2f}%)")
 fig.colorbar(im4, ax=axes[1, 1])
+
+# Repeated point draw
+Nrep = 50;
+points_rep = np.zeros(np.shape(points))
+for i in range(Nrep):
+    points_i, _, _, _ = draw_points_inpox(z, ext_vals, dx=meta["cellsize"])
+    points_rep += points_i
+
+
+# --- Sampled points ---
+im4 = axes[1, 2].imshow(points_rep,vmin=0,vmax=Nrep)
+axes[1, 2].set_title(f"Number of draws in {Nrep:.0f} extractions")
+fig.colorbar(im4, ax=axes[1, 2])
 
 plt.tight_layout()
 plt.show()
