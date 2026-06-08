@@ -2,93 +2,153 @@
 """
 Created on Thu May 21 11:30:02 2026
 
-@author: Q362849
+@author: RBM, GEUS
 """
 
 import os
 import glob
-import rasterio
+from pathlib import Path
 
-def perturb_layer_boundaries(folder, k, output_folder="perturbed"):
+import rasterio
+import numpy as np
+
+
+def perturb_layer_boundaries(
+    folder,
+    k=1,
+    method="shift",
+    output_folder="perturbed",
+):
     """
-    Perturb all layer boundary GeoTIFFs except the top surface.
+    Perturb layer-boundary GeoTIFFs.
 
     Parameters
     ----------
-    folder : str
-        Folder containing GeoTIFF layer boundaries.
-    k : float
-        Scalar shift applied to all subsurface layers.
-        New layer = old layer - k
+    folder : str or Path
+        Folder containing the base GeoTIFF layer boundaries.
+
+    k : float or int, optional
+        Perturbation parameter.
+
+        method="shift":
+            shift all subsurface layers downward by k.
+
+        method="realization":
+            use realization number k.
+
+    method : str, optional
+        Perturbation method.
+
+        "shift"        : subtract k from all subsurface layers
+        "realization"  : replace layers with realization k
+
     output_folder : str, optional
-        Name of output subfolder written inside `folder`.
+        Name of output subfolder.
 
     Notes
     -----
-    - top_surface.tif is copied unchanged
-    - all other .tif files are shifted downward by k
-    - outputs are written as:
-          <original_name>_perturbed.tif
+    top_surface.tif is always copied unchanged.
     """
 
-    # ------------------------------------------------------------
-    # Create output folder
-    # ------------------------------------------------------------
-    out_dir = os.path.join(folder, output_folder)
-    os.makedirs(out_dir, exist_ok=True)
+    folder = Path(folder)
 
-    # ------------------------------------------------------------
-    # Find all tif files
-    # ------------------------------------------------------------
-    tif_files = sorted(glob.glob(os.path.join(folder, "*.tif")))
+    out_dir = folder / output_folder
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    tif_files = sorted(folder.glob("*.tif"))
 
     print(f"Found {len(tif_files)} GeoTIFF files")
+    print(f"Method: {method}")
+
+    # ------------------------------------------------------------
+    # Realization setup
+    # ------------------------------------------------------------
+
+    if method == "realization":
+
+        realization_folder = folder.parent / f"realization{k}"
+
+        if not realization_folder.exists():
+            raise FileNotFoundError(
+                f"Realization folder not found:\n"
+                f"{realization_folder}"
+            )
+
+        print(f"Using realization: {realization_folder}")
+
+    elif method != "shift":
+
+        raise ValueError(
+            f"Unknown method '{method}'"
+        )
+
+    # ------------------------------------------------------------
+    # Loop files
+    # ------------------------------------------------------------
 
     for fname in tif_files:
 
-        base = os.path.basename(fname)
-        name = os.path.splitext(base)[0]
+        name = fname.stem
 
-        print(f"Processing: {base}")
+        print(f"Processing: {fname.name}")
 
-        # --------------------------------------------------------
-        # Read raster
-        # --------------------------------------------------------
         with rasterio.open(fname) as src:
 
             z = src.read(1)
             profile = src.profile.copy()
             nodata = src.nodata
 
-            # ----------------------------------------------------
-            # Keep terrain unchanged
-            # ----------------------------------------------------
-            if name.lower() == "top_surface":
+        # --------------------------------------------------------
+        # Terrain unchanged
+        # --------------------------------------------------------
 
-                z_new = z.copy()
+        if name.lower() == "top_surface":
 
+            z_new = z.copy()
+
+        # --------------------------------------------------------
+        # Method: shift
+        # --------------------------------------------------------
+
+        elif method == "shift":
+
+            z_new = z.astype(float).copy()
+
+            if nodata is not None:
+                mask = z_new == nodata
+                z_new[~mask] -= k
             else:
+                z_new -= k
 
-                z_new = z.astype(float).copy()
+        # --------------------------------------------------------
+        # Method: realization
+        # --------------------------------------------------------
 
-                # Avoid perturbing nodata cells
-                if nodata is not None:
-                    mask = z_new == nodata
-                    z_new[~mask] -= k
-                else:
-                    z_new -= k
+        elif method == "realization":
 
-            # ----------------------------------------------------
-            # Output filename
-            # ----------------------------------------------------
-            out_name = f"{name}_perturbed.tif"
-            out_path = os.path.join(out_dir, out_name)
+            replacement_file = realization_folder / fname.name
 
-            # ----------------------------------------------------
-            # Write GeoTIFF
-            # ----------------------------------------------------
-            with rasterio.open(out_path, "w", **profile) as dst:
-                dst.write(z_new, 1)
+            if not replacement_file.exists():
+
+                raise FileNotFoundError(
+                    f"Missing realization file:\n"
+                    f"{replacement_file}"
+                )
+
+            with rasterio.open(replacement_file) as src_rep:
+
+                z_new = src_rep.read(1)
+
+        # --------------------------------------------------------
+        # Output
+        # --------------------------------------------------------
+
+        out_name = f"{name}_perturbed.tif"
+        out_path = out_dir / out_name
+
+        with rasterio.open(out_path, "w", **profile) as dst:
+
+            dst.write(z_new, 1)
 
         print(f"  -> wrote {out_name}")
 
