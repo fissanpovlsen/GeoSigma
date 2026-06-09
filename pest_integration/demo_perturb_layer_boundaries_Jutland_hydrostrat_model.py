@@ -16,15 +16,31 @@ from pest_integration import perturb_layer_boundaries
 
 
 #%% Run pertubation shift
-k = 20
+k = 50
 
 perturb_layer_boundaries("examples/data/Jutland_hydrostrat_model/",k,method="shift")
 
 
-#%% Run pertubation shift
-k = 1
+#%% Run pertubation realization
+k = 2
 
-perturb_layer_boundaries("examples/data/Reals/",k,method="realization")
+layers = ['topo.tif',
+          '0010_Post_Glacial_Ler_Toerv_Gytje_bund.tif',
+          '1100_Kvartaer_ler_Bund.tif',
+          '1200_Kvartaer_sand_Bund.tif',
+          '1300_Kvartaer_ler_Bund.tif',
+          '1400_Kvartaer_sand_Bund.tif',
+          '1500_Kvartaer_ler_Bund.tif',
+          '2100_Kvartaer_sand_Bund.tif',
+          '2200_Kvartaer_ler_Bund.tif',
+          '2300_Kvartaer_sand_Bund.tif',
+          '2400_Preq_Kvartaer_ler_Bund.tif',
+          '7400_Billund_BDS2_Bund.tif',
+          '7800_Billund_BDS0_Bund.tif',
+          '8000_Palaeogen_ler_Bund.tif',
+          '8500_Danien_Kalk_Bund.tif',
+          '9000_Skrivekridt_Bund.tif'];
+perturb_layer_boundaries("examples/data/Reals/",k,method="realization",layers=layers)
 
 
 
@@ -34,7 +50,8 @@ perturb_layer_boundaries("examples/data/Reals/",k,method="realization")
 # Load all GeoTIFF surfaces
 # ============================================================
 
-folder = "examples/data/Jutland_hydrostrat_model/perturbed"
+#folder = "examples/data/Jutland_hydrostrat_model/perturbed"
+folder = "examples/data/Reals/perturbed"
 
 # Find all tif files
 tif_files = glob.glob(os.path.join(folder, "*.tif"))
