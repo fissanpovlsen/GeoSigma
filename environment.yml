@@ -124,6 +124,7 @@ dependencies:
       - imagesize==2.0.0
       - importlib-metadata==8.7.1
       - inflection==0.5.1
+      - iniconfig==2.3.0
       - intervaltree==3.2.1
       - ipykernel==6.31.0
       - ipython==9.10.0
@@ -191,6 +192,7 @@ dependencies:
       - pyqt5-sip==12.18.0
       - pyqtwebengine==5.15.7
       - pyqtwebengine-qt5==5.15.2
+      - pytest==9.1.0
       - python-dateutil==2.9.0.post0
       - python-lsp-black==2.0.0
       - python-lsp-jsonrpc==1.1.2

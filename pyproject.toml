@@ -1,3 +1,9 @@
 [build-system]
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+# Put the repo root on sys.path so tests can import the top-level `utils`,
+# `geosigma`, and `tests.golden` packages without an editable install.
+pythonpath = ["."]
+testpaths = ["tests"]
