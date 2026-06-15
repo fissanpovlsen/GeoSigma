@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# GeoSigma — original work.
+# Author:     Rasmus Bødker Madsen (rbm@geus.dk)
+# Co-authors: Frederik Falk; Claude (Anthropic)
 """geosigma.core — low-level geostatistical math.
 
 Target home for the already-translated primitives (``precal_cov``, ``edist``,

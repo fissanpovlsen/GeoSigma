@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# GeoSigma — original work.
+# Author:     Rasmus Bødker Madsen (rbm@geus.dk)
+# Co-authors: Frederik Falk; Claude (Anthropic)
 """geosigma.assembly — final model assembly and export.
 
 Blends kriged surfaces into the background model (``merge_layers``), enforces

@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# GeoSigma — original work.
+# Author:     Rasmus Bødker Madsen (rbm@geus.dk)
+# Co-authors: Frederik Falk; Claude (Anthropic)
 """Shared pytest fixtures for the GeoSigma test harness.
 
 The parity fixture is intentionally tiny — a single layer of the Jutland sample

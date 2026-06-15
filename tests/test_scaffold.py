@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# GeoSigma — original work.
+# Author:     Rasmus Bødker Madsen (rbm@geus.dk)
+# Co-authors: Frederik Falk; Claude (Anthropic)
 """Phase 0 smoke tests: package skeleton imports, parity fixture loads, and the
 golden-array helper round-trips. These guard the scaffold itself; real
 per-module goldens/invariants arrive in later phases.

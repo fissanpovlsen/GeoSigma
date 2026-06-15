@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# GeoSigma — original work.
+# Author:     Rasmus Bødker Madsen (rbm@geus.dk)
+# Co-authors: Frederik Falk; Claude (Anthropic)
 """Golden-array (`.npz`) verification helper for GeoSigma.
 
 A *golden array* is a saved, trusted reference output that later runs are

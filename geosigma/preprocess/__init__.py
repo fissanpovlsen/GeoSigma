@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# GeoSigma — original work.
+# Author:     Rasmus Bødker Madsen (rbm@geus.dk)
+# Co-authors: Frederik Falk; Claude (Anthropic)
 """geosigma.preprocess — per-layer preprocessing.
 
 masks (``get_layermasks``), point drawing (``drawpoints``), windowed range/sill

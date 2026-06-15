@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# GeoSigma — original work.
+# Author:     Rasmus Bødker Madsen (rbm@geus.dk)
+# Co-authors: Frederik Falk; Claude (Anthropic)
 """geosigma.themes — STANDALONE variance-map tool.
 
 Builds per-layer variance grids from geophysical data sources (today: the

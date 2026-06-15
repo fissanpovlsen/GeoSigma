@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# GeoSigma — original work.
+# Author:     Rasmus Bødker Madsen (rbm@geus.dk)
+# Co-authors: Frederik Falk; Claude (Anthropic)
 """geosigma.kriging — local kriging driver and simulation.
 
 Working-state packing (``setup_GLOBAL_structure``), buffer-zone logic
