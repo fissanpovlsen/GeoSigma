@@ -9,5 +9,9 @@ Replaces the MATLAB ``landsdel_switch`` / ``get_layer_names`` switches with a
 ``RegionConfig`` registry (layer names, well files, paths). No region-specific
 constants live in library code.
 
-Scaffold only (Phase 0); populated in **Phase 2**.
+Phase 2: :class:`RegionConfig` provides the registry.
 """
+
+from .region import RegionConfig
+
+__all__ = ["RegionConfig"]
