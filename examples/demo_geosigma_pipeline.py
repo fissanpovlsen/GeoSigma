@@ -23,8 +23,8 @@ from utils import load_geotiff_grid, grid_coordinates_from_esri_meta
 
 # GeoSigma
 from geosigma import draw_points_inpox,visualize_transfer_function
-from geosigma.precal_cov import precal_cov
-from geosigma.get_reals_cholesky import get_reals_cholesky
+from geosigma.core.precal_cov import precal_cov
+from geosigma.core.get_reals_cholesky import get_reals_cholesky
 
 
 np.random.seed(42)

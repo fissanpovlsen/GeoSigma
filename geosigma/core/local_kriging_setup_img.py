@@ -1,5 +1,5 @@
 import numpy as np
-from geosigma.precal_cov import precal_cov
+from .precal_cov import precal_cov
 
 def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_noise_rat, dx=100, dy=100, verbose=False):
     """
