@@ -7,3 +7,7 @@ __pycache__/
 *$py.class
 grid_conversion_DKM345.py
 TRANSLATION_PLAN.md
+
+
+# Private validation data — not for public release
+examples/data/var_map_demo/*
