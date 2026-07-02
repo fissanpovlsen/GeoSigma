@@ -11,3 +11,11 @@ TRANSLATION_PLAN.md
 
 # Private validation data — not for public release
 examples/data/var_map_demo/*
+
+# Private MATLAB-parity validation harness — loads/derives from the private
+# Danish workspaces, so it stays LOCAL and is never committed. Only the eventual
+# anonymised public themes demo (see TRANSLATION_PLAN.md "Final step") ships.
+examples/var_map_demo_adapter.py
+examples/demo_validate_themes_vs_matlab.py
+examples/output/
+tools/inventory_plotting_mat.py
