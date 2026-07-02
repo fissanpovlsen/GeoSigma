@@ -27,16 +27,31 @@ from geosigma.themes import (
     NODATA_VARIANCE,
     ThemeData,
     apply_floor,
+    available_certainty_functions,
     build_theme,
     certainty_function,
     combine_variances,
     corr_map,
     minimum_map,
     model_theme,
+    register_certainty_function,
     windowed_nearest,
 )
+from geosigma.themes import certainty_functions as cf
 from geosigma.themes import themes as theme_specs
 from tests.golden import assert_matches_golden
+
+
+@pytest.fixture
+def restore_cert_registry():
+    """Snapshot and restore the certainty-function registry around a test, so
+    test registrations never leak into other tests."""
+    saved = dict(cf._CERT_FUNCTIONS)
+    try:
+        yield
+    finally:
+        cf._CERT_FUNCTIONS.clear()
+        cf._CERT_FUNCTIONS.update(saved)
 
 # ---------------------------------------------------------------------------
 # Certainty kernels
@@ -66,6 +81,50 @@ def test_ilm_sep_zero_outside_width():
 def test_unknown_certainty_function_raises():
     with pytest.raises(ValueError):
         certainty_function("does_not_exist")
+
+
+# ---------------------------------------------------------------------------
+# register_certainty_function — the custom-kernel extension point
+# ---------------------------------------------------------------------------
+
+
+def _linear_kernel(dist, range_, width, sill):
+    """A trivial well-formed custom kernel: linear falloff to zero at ``range_``."""
+    return sill * np.clip(1.0 - dist / range_, 0.0, None)
+
+
+def test_register_and_use_custom_kernel(restore_cert_registry):
+    register_certainty_function("LINEAR_test", _linear_kernel)
+    assert "LINEAR_test" in available_certainty_functions()
+    fn = certainty_function("LINEAR_test")
+    assert fn is _linear_kernel
+    # And it actually evaluates as registered.
+    out = fn(np.array([0.0, 5.0, 10.0]), 10.0, 0.0, 2.0)
+    np.testing.assert_allclose(out, [2.0, 1.0, 0.0])
+
+
+def test_register_rejects_non_callable(restore_cert_registry):
+    with pytest.raises(TypeError, match="callable"):
+        register_certainty_function("NOT_CALLABLE", 42)
+
+
+def test_register_rejects_wrong_signature(restore_cert_registry):
+    def bad(dist, range_, width):  # missing 'sill'
+        return dist
+
+    with pytest.raises(TypeError, match="signature"):
+        register_certainty_function("BAD_SIG", bad)
+
+
+def test_register_duplicate_name_raises(restore_cert_registry):
+    # A built-in preset name is already taken.
+    with pytest.raises(ValueError, match="already registered"):
+        register_certainty_function("FRAFA_apr2023", _linear_kernel)
+
+
+def test_register_duplicate_with_overwrite_succeeds(restore_cert_registry):
+    register_certainty_function("FRAFA_apr2023", _linear_kernel, overwrite=True)
+    assert certainty_function("FRAFA_apr2023") is _linear_kernel
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +232,13 @@ def naive_windowed_nearest(
             local_dist[i, j] = dmin
             tie = idx[d == dmin]
             for name in attributes:
-                vals = attrs[name][tie]
                 red = reducers[name]
+                if red == "first":
+                    # First point in the WINDOW (lowest index), not the tie set —
+                    # MATLAB ``local_X(i,j) = X(filt)(1)``.
+                    reduced[name][i, j] = attrs[name][idx[0]]
+                    continue
+                vals = attrs[name][tie]
                 if red == "mean":
                     reduced[name][i, j] = vals.mean(axis=0)
                 elif red == "min":
@@ -254,6 +318,7 @@ def test_tie_reduction_is_exercised():
         lambda: theme_specs.gammalog_spec(n_prereq=2),
         lambda: theme_specs.reslog_spec(n_prereq=2),
         lambda: theme_specs.refseis_spec(n_prereq=2, active_layers=[0, 2]),
+        lambda: theme_specs.pacep_spec(n_prereq=2),
         lambda: theme_specs.fewtem_spec(n_prereq=2),
         lambda: theme_specs.manytem_spec(n_prereq=2),
         lambda: theme_specs.ttem_spec(n_prereq=2),
@@ -282,17 +347,143 @@ def test_build_theme_basic_invariants():
     # Variance is strictly positive everywhere and never NaN (NaN -> sentinel).
     assert np.all(grid > 0)
     assert not np.isnan(grid).any()
-    # +inf is a *valid* outcome (a location exists but beyond the certainty
-    # kernel's reach => zero certainty => infinite variance). The MATLAB leaves
-    # it as Inf, and combine() turns it into zero precision. So we assert "no
-    # NaN", not "all finite".
+    # +inf is a *valid* outcome (a location with KNOWN complexity exists but
+    # beyond the certainty kernel's reach => zero certainty => infinite variance).
+    # The MATLAB leaves it as Inf, and combine() turns it into zero precision. So
+    # we assert "no NaN", not "all finite".
     assert np.isinf(grid).any()
-    # Cells of unknown complexity (class 0) carry no usable information: the
-    # NaN range makes the kernel either NaN (-> sentinel, location within width)
-    # or 0 (-> +inf, location beyond width). Either way, not informative.
+    # Cells of unknown complexity (class 0) carry no usable information. With the
+    # multiplicative MATLAB kernel the NaN range poisons BOTH branches: a location
+    # within width gives NaN*... = NaN, and one beyond width gives 0*NaN = NaN
+    # (np.where would have leaked a literal 0 -> +inf here). Either way -> sentinel.
     unknown = complexity == 0
     g = grid[unknown]
-    assert np.all((g == NODATA_VARIANCE) | np.isinf(g))
+    assert np.all(g == NODATA_VARIANCE)
+
+
+# ---------------------------------------------------------------------------
+# MEP: the "first point in window" reducer and acquisition-type var0
+#
+# The Jylland reference data contains *no* wenner-2D points, so the real-data
+# validation never exercises either of MEP's two wrinkles. These synthetic cases
+# cover them directly.
+# ---------------------------------------------------------------------------
+
+
+def _first_reducer_case():
+    """A case where the first point in a window is NOT the nearest point.
+
+    Cell (iy=2, ix=2) = (200, 200) has two in-window points: point 0 sits in the
+    far corner (lowest index -> wins ``first``) and point 1 sits exactly on the
+    cell (the nearest -> wins any tie-set reducer). Their ``mep_type`` differ, so
+    ``first`` and "nearest" give provably different answers there.
+    """
+    nx = ny = 5
+    n_layers = 2
+    dx = 100.0
+    grid_x = np.arange(nx) * dx
+    grid_y = np.arange(ny) * dx
+    xs = np.array([40.0, 200.0])
+    ys = np.array([40.0, 200.0])
+    attributes = {
+        "depth": np.array([[50.0, 50.0], [10.0, 10.0]]),
+        "doi": np.array([200.0, 200.0]),     # never masks (doi > depth)
+        "mep_type": np.array([1.0, 0.0]),    # first=wenner, nearest=not-wenner
+    }
+    return grid_x, grid_y, xs, ys, attributes, n_layers
+
+
+def test_first_reducer_matches_naive_and_picks_window_first():
+    grid_x, grid_y, xs, ys, attributes, n_layers = _first_reducer_case()
+    reducers = {"depth": "mean", "doi": "mean", "mep_type": "first"}
+    fast_d, fast = windowed_nearest(
+        xs, ys, grid_x, grid_y, 2, attributes, reducers, n_layers
+    )
+    ref_d, ref = naive_windowed_nearest(
+        xs, ys, grid_x, grid_y, 2, attributes, reducers, n_layers
+    )
+    for name in attributes:
+        np.testing.assert_allclose(
+            fast[name], ref[name], rtol=0, atol=0, equal_nan=True
+        )
+    # 'first' picks the lowest-index in-window point (type 1)...
+    assert fast["mep_type"][2, 2, 0] == 1.0
+    # ...whereas a tie-set reducer would pick the nearest point (type 0).
+    _, near = windowed_nearest(
+        xs, ys, grid_x, grid_y, 2,
+        {"mep_type": attributes["mep_type"]}, {"mep_type": "mean"}, n_layers,
+    )
+    assert near["mep_type"][2, 2, 0] == 0.0
+
+
+def test_mep_var0_depends_on_acquisition_type():
+    """The wenner-2D vs not-wenner var0 branches produce different variance."""
+    grid_x, grid_y, xs, ys, attributes, n_layers = _first_reducer_case()
+    complexity = np.full((grid_y.size, grid_x.size), 2.0)
+    spec = theme_specs.mep_spec(n_prereq=1, doi_fill=50.0)
+
+    g_w = build_theme(
+        ThemeData(xs=xs, ys=ys,
+                  attributes={**attributes, "mep_type": np.array([1.0, 1.0])},
+                  complexity=complexity),
+        spec, grid_x, grid_y, n_layers,
+    )
+    g_n = build_theme(
+        ThemeData(xs=xs, ys=ys,
+                  attributes={**attributes, "mep_type": np.array([0.0, 0.0])},
+                  complexity=complexity),
+        spec, grid_x, grid_y, n_layers,
+    )
+    informative = (
+        (g_w < NODATA_VARIANCE) & np.isfinite(g_w)
+        & (g_n < NODATA_VARIANCE) & np.isfinite(g_n)
+    )
+    assert informative.any()
+    assert not np.allclose(g_w[informative], g_n[informative])
+
+
+def test_mep_build_theme_identical_under_both_windowings():
+    grid_x, grid_y, xs, ys, attributes, n_layers = _first_reducer_case()
+    complexity = np.full((grid_y.size, grid_x.size), 2.0)
+    spec = theme_specs.mep_spec(n_prereq=1, doi_fill=50.0)
+    data = ThemeData(xs=xs, ys=ys, attributes=attributes, complexity=complexity)
+    fast = build_theme(data, spec, grid_x, grid_y, n_layers)
+    ref = build_theme(
+        data, spec, grid_x, grid_y, n_layers, window_fn=naive_windowed_nearest
+    )
+    np.testing.assert_allclose(fast, ref, rtol=0, atol=0, equal_nan=True)
+
+
+def test_pacep_doi_fill_after_reduction():
+    """A NaN DOI at the nearest point becomes 15 per-cell (not masked away)."""
+    grid_x = np.arange(3) * 100.0
+    grid_y = np.arange(3) * 100.0
+    xs = np.array([100.0])
+    ys = np.array([100.0])
+    attributes = {
+        "depth": np.array([[10.0]]),
+        "doi": np.array([np.nan]),   # missing -> filled with 15 after reduction
+    }
+    complexity = np.full((3, 3), 2.0)
+    spec = theme_specs.pacep_spec(n_prereq=1)
+    data = ThemeData(xs=xs, ys=ys, attributes=attributes, complexity=complexity)
+    grid = build_theme(data, spec, grid_x, grid_y, 1)
+    # doi filled to 15 > depth 10 -> the central cell is NOT masked (informative).
+    assert grid[1, 1, 0] < NODATA_VARIANCE
+
+
+def test_missing_complexity_defaults_to_uniform_class_one():
+    grid_x, grid_y, xs, ys, attributes, _, complexity, n_layers = _synthetic_case()
+    spec = theme_specs.paces_spec(n_prereq=2)
+    g_none = build_theme(
+        ThemeData(xs=xs, ys=ys, attributes=attributes), spec, grid_x, grid_y, n_layers
+    )
+    g_one = build_theme(
+        ThemeData(xs=xs, ys=ys, attributes=attributes,
+                  complexity=np.ones_like(complexity)),
+        spec, grid_x, grid_y, n_layers,
+    )
+    np.testing.assert_array_equal(g_none, g_one)
 
 
 def test_refseis_inactive_layers_are_nodata():

@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .base import ThemeSpec
+from .base import RangeGroup, ThemeSpec
 
 # Complexity-class -> range tables shared by most themes. Index 0 is the
 # "unknown" slot (never used: complexity 0 is masked to NaN range); indices
@@ -42,15 +42,40 @@ _COMP2RANGE_PREQ = [500, 500, 500, 500, 500]
 _COMP2RANGE_TTEM = [100, 100, 100, 100, 100]
 _COMP2RANGE_PREQ_TTEM = [100, 100, 100, 100, 100]
 
+# The borehole-LOG themes (GAMMALOG/RESLOG) effectively have NO pre-Quaternary
+# range override: in their MATLAB source the override is a dormant bug. Unlike
+# fewTEM/PACES (which set ``rangemap = complexities``, a 3D array), the log themes
+# set ``rangemap = complexity`` — a *2D* array — so the line
+# ``rangemap(:,:,Npreq:end) = ...`` indexes a singleton 3rd dimension and is a
+# no-op; the 2D graded ``comp2range`` is then broadcast across every layer. We
+# reproduce this bit-for-bit by giving the pre-Q table the same graded values as
+# ``comp2range`` (so the engine's override, if it fires, changes nothing).
+_COMP2RANGE_PREQ_LOG = _COMP2RANGE
+
+
+def _two_regime(n_prereq, base_table, preq_table):
+    """Danish two-regime ``range_model``: ``base_table`` for the Quaternary
+    layers ``0 .. n_prereq-1``, ``preq_table`` from ``n_prereq`` onward.
+
+    ``n_prereq`` is the (0-based) modelled-layer index of the first
+    pre-Quaternary layer (the MATLAB ``Npreq - NPL``). It stays a parameter of
+    these *Danish* built-in specs — it is no longer a field of the model-agnostic
+    :class:`~geosigma.themes.base.ThemeSpec`, which sees only the resulting
+    groups. This reproduces the old ``rangemap(:,:,n_prereq:end) = preq`` logic
+    exactly (an empty group when ``n_prereq`` falls outside the layer range).
+    """
+    return [
+        RangeGroup(layers=(0, n_prereq - 1), range_by_complexity=base_table),
+        RangeGroup(layers=(n_prereq, None), range_by_complexity=preq_table),
+    ]
+
 
 def paces_spec(n_prereq: int) -> ThemeSpec:
     """PACES theme (search radius 1 cell; FRAFA plateau kernel)."""
     return ThemeSpec(
         name="PACES",
         search_radius=1,
-        comp2range=_COMP2RANGE,
-        comp2range_preq=_COMP2RANGE_PREQ,
-        n_prereq=n_prereq,
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ),
         cert_fun_name="FRAFA_apr2023",
         attributes=("depth",),
         reducers={"depth": "mean"},
@@ -61,14 +86,96 @@ def paces_spec(n_prereq: int) -> ThemeSpec:
     )
 
 
+def pacep_spec(n_prereq: int, cert_fun_name: str = "ILM_sep2023") -> ThemeSpec:
+    """PACEP theme (search radius 1 cell; plateau half-width 75).
+
+    Like PACES, ``get_PACEP_theme.m`` takes the run's ``cert_fun_choice``
+    (defaulting to ``FRAFA_apr2023``); the Jylland reference run used
+    ``ILM_sep2023`` (the same global choice that SkyTEM/fewTEM/manyTEM validated
+    under). ``var0 = (0.5*max(5, 0.5*depth))^2`` and missing DOI is filled
+    **per-cell after reduction** with a constant 15 (see ``post_reduce_fn``),
+    then cells whose boundary lies below the DOI are masked.
+    """
+    return ThemeSpec(
+        name="PACEP",
+        search_radius=1,
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ),
+        cert_fun_name=cert_fun_name,
+        attributes=("depth", "doi"),
+        reducers={"depth": "mean", "doi": "mean"},
+        var0_fn=lambda a: (0.5 * np.maximum(5.0, 0.5 * a["depth"])) ** 2,
+        kernel_fn=lambda a: np.full_like(a["depth"], 75.0),
+        mask_fn=lambda a: a["doi"] < a["depth"],
+        post_reduce_fn=_pacep_post_reduce,
+    )
+
+
+def _pacep_post_reduce(a):
+    # MATLAB: local_doi(isnan(local_doi)) = 15  (per-cell, after the window pass).
+    a["doi"] = np.where(np.isnan(a["doi"]), 15.0, a["doi"])
+    return a
+
+
+def mep_spec(n_prereq: int, doi_fill: float,
+             cert_fun_name: str = "ILM_sep2023") -> ThemeSpec:
+    """MEP (multi-electrode profiling) theme (search radius 2; plateau width 75).
+
+    Two MEP-specific wrinkles, both transcribed from ``get_MEP_theme.m``:
+
+    * **Acquisition-type-dependent ``var0``.** Each data point is classified
+      ``wenner_2d`` (datasubtype starting ``"wen"``) or not. ``var0`` uses
+      ``0.5*max(2.4, 0.25*depth)`` for wenner-2D points and
+      ``0.5*max(1.25, 0.15*depth)`` otherwise. The type is selected by the
+      ``first`` reducer — the first data point in each cell's window, **not** the
+      nearest — exactly as the MATLAB ``local_MEP_type = Type(filt)(1)``.
+    * **DOI fill.** Missing DOI is filled per-cell after reduction with
+      ``doi_fill`` — the mean of the source's non-NaN ``doilower`` values, which
+      the adapter computes from the (filtered) point set and passes in.
+
+    Like PACES/PACEP, the MATLAB default ``cert_fun_choice`` is ``FRAFA_apr2023``
+    but the Jylland reference run used ``ILM_sep2023``.
+    """
+    return ThemeSpec(
+        name="MEP",
+        search_radius=2,
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ),
+        cert_fun_name=cert_fun_name,
+        attributes=("depth", "doi", "mep_type"),
+        reducers={"depth": "mean", "doi": "mean", "mep_type": "first"},
+        var0_fn=_mep_var0,
+        kernel_fn=lambda a: np.full_like(a["depth"], 75.0),
+        mask_fn=lambda a: a["doi"] < a["depth"],
+        post_reduce_fn=_make_mep_post_reduce(doi_fill),
+    )
+
+
+def _mep_var0(a):
+    # var0 = (wenner_var0 * is_wenner + other_var0 * is_other)^2
+    # is_wenner is 1 / 0 / NaN (no point); the NaN propagates to NODATA downstream.
+    depth = a["depth"]
+    is_wenner = a["mep_type"]
+    is_other = (is_wenner == 0)
+    wenner_var0 = 0.5 * np.maximum(2.4, 0.25 * depth)
+    other_var0 = 0.5 * np.maximum(1.25, 0.15 * depth)
+    return (wenner_var0 * is_wenner + other_var0 * is_other) ** 2
+
+
+def _make_mep_post_reduce(doi_fill):
+    def _post(a):
+        # MATLAB: local_doi(isnan(local_doi)) = mean(DOIs(~isnan(DOIs)))
+        a["doi"] = np.where(np.isnan(a["doi"]), doi_fill, a["doi"])
+        return a
+
+    return _post
+
+
 def gammalog_spec(n_prereq: int) -> ThemeSpec:
     """Gamma-log theme (search radius 6; ILM Gaussian kernel; min thickness)."""
     return ThemeSpec(
         name="GAMMALOG",
         search_radius=6,
-        comp2range=_COMP2RANGE,
-        comp2range_preq=_COMP2RANGE_PREQ,
-        n_prereq=n_prereq,
+        # no pre-Q override (MATLAB no-op): both regimes share the graded table.
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ_LOG),
         cert_fun_name="ILM_sep2023",
         attributes=("depth", "thick"),
         reducers={"depth": "mean", "thick": "min"},
@@ -90,9 +197,8 @@ def reslog_spec(n_prereq: int) -> ThemeSpec:
     return ThemeSpec(
         name="RESLOG",
         search_radius=6,
-        comp2range=_COMP2RANGE,
-        comp2range_preq=_COMP2RANGE_PREQ,
-        n_prereq=n_prereq,
+        # no pre-Q override (MATLAB no-op): both regimes share the graded table.
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ_LOG),
         cert_fun_name="ILM_sep2023",
         attributes=("depth", "thick"),
         reducers={"depth": "mean", "thick": "min"},
@@ -119,9 +225,7 @@ def refseis_spec(n_prereq: int, active_layers) -> ThemeSpec:
     return ThemeSpec(
         name="REFSEIS",
         search_radius=8,
-        comp2range=_COMP2RANGE,
-        comp2range_preq=_COMP2RANGE_PREQ,
-        n_prereq=n_prereq,
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ),
         cert_fun_name="FRAFA_apr2023",
         attributes=("thick",),
         reducers={"thick": "max"},
@@ -133,14 +237,41 @@ def refseis_spec(n_prereq: int, active_layers) -> ThemeSpec:
     )
 
 
+def skytem_spec(n_prereq: int, cert_fun_name: str = "ILM_sep2023") -> ThemeSpec:
+    """Airborne TEM (SkyTEM) theme (search radius 6).
+
+    Unlike fewTEM/manyTEM/REFSEIS (which hardcode their kernel), the MATLAB
+    ``get_SkyTEM_theme.m`` takes the run's ``cert_fun_choice`` (defaulting to
+    ``FRAFA_apr2023``); the Jylland reference run used ``ILM_sep2023``. ``var0`` is
+    driven by the **minimum** model thickness over the nearest-point ties (not the
+    mean), and the plateau half-width is ``max(2*depth, 75)``.
+    """
+    return ThemeSpec(
+        name="SkyTEM",
+        search_radius=6,
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ),
+        cert_fun_name=cert_fun_name,
+        attributes=("depth", "thick", "doi"),
+        reducers={"depth": "mean", "thick": "min", "doi": "mean"},
+        var0_fn=_skytem_var0,
+        kernel_fn=lambda a: np.maximum(2.0 * a["depth"], 75.0),
+        mask_fn=lambda a: a["doi"] < a["depth"],
+    )
+
+
+def _skytem_var0(a):
+    # var0 = (0.5*1.2*thick_min)^2 ; sentinel 100000 where depth < 5.
+    var0 = (0.5 * 1.2 * a["thick"]) ** 2
+    var0[a["depth"] < 5.0] = 100000.0
+    return var0
+
+
 def fewtem_spec(n_prereq: int) -> ThemeSpec:
     """Few-layer TEM theme (search radius 6; ILM Gaussian kernel)."""
     return ThemeSpec(
         name="fewTEM",
         search_radius=6,
-        comp2range=_COMP2RANGE,
-        comp2range_preq=_COMP2RANGE_PREQ,
-        n_prereq=n_prereq,
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ),
         cert_fun_name="ILM_sep2023",
         attributes=("depth", "doi"),
         reducers={"depth": "mean", "doi": "mean"},
@@ -162,9 +293,7 @@ def manytem_spec(n_prereq: int) -> ThemeSpec:
     return ThemeSpec(
         name="manyTEM",
         search_radius=6,
-        comp2range=_COMP2RANGE,
-        comp2range_preq=_COMP2RANGE_PREQ,
-        n_prereq=n_prereq,
+        range_model=_two_regime(n_prereq, _COMP2RANGE, _COMP2RANGE_PREQ),
         cert_fun_name="ILM_sep2023",
         attributes=("depth", "thick", "doi"),
         reducers={"depth": "mean", "thick": "mean", "doi": "mean"},
@@ -186,9 +315,7 @@ def ttem_spec(n_prereq: int) -> ThemeSpec:
     return ThemeSpec(
         name="tTEM",
         search_radius=6,
-        comp2range=_COMP2RANGE_TTEM,
-        comp2range_preq=_COMP2RANGE_PREQ_TTEM,
-        n_prereq=n_prereq,
+        range_model=_two_regime(n_prereq, _COMP2RANGE_TTEM, _COMP2RANGE_PREQ_TTEM),
         cert_fun_name="ILM_sep2023",
         attributes=("depth", "thick", "doi"),
         reducers={"depth": "mean", "thick": "mean", "doi": "mean"},

@@ -15,9 +15,9 @@ Layout
 * :mod:`~geosigma.themes.base` — the generic, model-agnostic engine
   (:class:`ThemeData`, :class:`ThemeSpec`, :func:`build_theme`,
   :func:`windowed_nearest`).
-* :mod:`~geosigma.themes.themes` — the seven built-in theme specs (PACES,
-  GAMMALOG, RESLOG, REFSEIS, fewTEM, manyTEM, tTEM), transcribed verbatim from
-  the MATLAB source.
+* :mod:`~geosigma.themes.themes` — the built-in theme specs (PACES, GAMMALOG,
+  RESLOG, REFSEIS, SkyTEM, fewTEM, manyTEM, tTEM), transcribed verbatim from the
+  MATLAB source.
 * :mod:`~geosigma.themes.certainty_functions` — the named certainty-decay kernels.
 * :mod:`~geosigma.themes.model_theme` — the depth-dependent model-area floor.
 * :mod:`~geosigma.themes.combine` — parallel-precision combine, minimum-map floor,
@@ -48,10 +48,29 @@ layers around the engine output — no engine change required. The peat *content
 itself (``get_PL_themes`` / ``get_PL_themes_ILM``) is excluded entirely.
 """
 
-from .base import NODATA_VARIANCE, ThemeData, ThemeSpec, build_theme, windowed_nearest
-from .certainty_functions import available_certainty_functions, certainty_function
+from .base import (
+    NODATA_VARIANCE,
+    RangeGroup,
+    ThemeData,
+    ThemeSpec,
+    build_theme,
+    windowed_nearest,
+)
+from .certainty_functions import (
+    available_certainty_functions,
+    certainty_function,
+    register_certainty_function,
+)
+from .spec_io import (
+    compile_expr,
+    dump_spec,
+    dump_spec_yaml,
+    load_spec,
+    load_spec_yaml,
+)
 from .combine import apply_floor, combine_variances, corr_map, minimum_map
 from .model_theme import model_theme
+from .well import WellSet, build_well_theme
 from .io import read_variance_stack, write_variance_stack
 from . import themes
 
@@ -59,10 +78,19 @@ __all__ = [
     "NODATA_VARIANCE",
     "ThemeData",
     "ThemeSpec",
+    "RangeGroup",
     "build_theme",
     "windowed_nearest",
+    "load_spec",
+    "load_spec_yaml",
+    "dump_spec",
+    "dump_spec_yaml",
+    "compile_expr",
+    "WellSet",
+    "build_well_theme",
     "certainty_function",
     "available_certainty_functions",
+    "register_certainty_function",
     "combine_variances",
     "minimum_map",
     "apply_floor",

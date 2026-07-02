@@ -96,7 +96,7 @@ layers around this output — no engine change needed. The peat *content*
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -118,15 +118,64 @@ class ThemeData:
         ``"thick"``, ``"doi"``). A 1-D ``(npoints,)`` array is broadcast across
         layers. Which attributes are required is declared by the
         :class:`ThemeSpec`.
-    complexity : ndarray, shape (ny, nx)
+    complexity : ndarray of shape (ny, nx), optional
         Geological-complexity class grid (integer classes; ``0`` = unknown ->
-        masked). Indexed ``[iy, ix]``.
+        masked, ``1..4`` = complexity classes low..high). Indexed ``[iy, ix]``.
+        The complexity map is a **Danish-specific** input (four classes, applied
+        to the Quaternary). It is **optional**: when ``None`` (the default) the
+        engine assumes a uniform complexity class ``1`` everywhere — i.e. a flat
+        correlation range with no complexity dependence (the first non-unknown
+        entry of each group's ``range_by_complexity``).
     """
 
     xs: np.ndarray
     ys: np.ndarray
     attributes: Mapping[str, np.ndarray]
-    complexity: np.ndarray
+    complexity: Optional[np.ndarray] = None
+
+
+#: A layer selector for a :class:`RangeGroup`. One of:
+#:
+#: * the string ``"all"`` — every modelled layer;
+#: * a 2-tuple ``(start, stop)`` of **0-based, inclusive** layer indices; either
+#:   end may be ``None`` (``start=None`` -> first layer, ``stop=None`` -> last
+#:   layer). This is the contiguous-range form;
+#: * an explicit iterable of **0-based** layer indices (e.g. ``[0, 2, 5]``).
+#:
+#: Note the deliberate type split: a *tuple* is an inclusive range, a *list* is
+#: an explicit index set. The YAML front-end (:mod:`geosigma.themes.spec_io`)
+#: turns 1-based labels like ``"L01-L13"`` into the tuple form before
+#: construction, so the engine itself never parses labels.
+LayerSelector = Union[str, Tuple[Optional[int], Optional[int]], Sequence[int]]
+
+
+@dataclass
+class RangeGroup:
+    """One group of layers sharing a complexity -> correlation-range table.
+
+    This is the **model-agnostic** replacement for the Danish-specific
+    ``n_prereq`` switch. A theme's range behaviour is a *list* of these groups
+    (``ThemeSpec.range_model``), which must together cover every modelled layer
+    exactly once:
+
+    * **No regime change** — a single group with ``layers="all"``.
+    * **Danish two-regime** (Quaternary / pre-Quaternary) — two groups split at
+      the boundary layer.
+    * **Per-layer variation** — one group per layer.
+
+    Parameters
+    ----------
+    layers : LayerSelector
+        Which modelled layers this group covers (see :data:`LayerSelector`).
+    range_by_complexity : sequence of float
+        Correlation range per complexity class. Index ``0`` is the *unknown*
+        class (never used — class-0 cells are masked); indices ``1..4`` are the
+        complexity classes. A length-5 list ``[unused, c1, c2, c3, c4]`` matches
+        the Danish convention, but any length >= 2 is accepted.
+    """
+
+    layers: LayerSelector
+    range_by_complexity: Sequence[float]
 
 
 @dataclass
@@ -138,13 +187,17 @@ class ThemeSpec:
     ``(ny, nx, n_layers)``. They encode the theme's ``var0``/``kernel``/mask
     formulae *verbatim* from the MATLAB source — the statistical model is never
     altered here.
+
+    ``range_model`` is the model-agnostic per-layer correlation-range
+    configuration (a list of :class:`RangeGroup`). It replaces the former
+    Danish-specific ``n_prereq`` + two-table fields; the Danish two-regime case
+    is now just a two-group ``range_model`` (see
+    :mod:`geosigma.themes.themes`).
     """
 
     name: str
     search_radius: int
-    comp2range: Sequence[float]
-    comp2range_preq: Sequence[float]
-    n_prereq: int
+    range_model: Sequence[RangeGroup]
     cert_fun_name: str
     attributes: Sequence[str]
     reducers: Mapping[str, str]
@@ -153,9 +206,19 @@ class ThemeSpec:
     mask_fn: Callable[[Mapping[str, np.ndarray]], np.ndarray]
     #: Optional subset of layer indices that receive data; others -> NODATA.
     active_layers: Optional[Sequence[int]] = None
+    #: Optional per-cell fix-up applied to the reduced attribute grids *after* the
+    #: windowed nearest-point pass and *before* var0/kernel/mask. Receives and
+    #: returns the ``attrs`` mapping (each ``(ny, nx, n_layers)``). Used by themes
+    #: that fill missing values per-cell after reduction — e.g. PACEP/MEP fill a
+    #: NaN depth-of-investigation with a constant / the mean DOI, which is *not*
+    #: equivalent to filling per data point before reduction (a mixed NaN/valid
+    #: tie set reduces to NaN, then gets filled).
+    post_reduce_fn: Optional[
+        Callable[[Mapping[str, np.ndarray]], Mapping[str, np.ndarray]]
+    ] = None
 
 
-_REDUCERS = ("mean", "min", "max")
+_REDUCERS = ("mean", "min", "max", "first")
 
 
 def _broadcast_attr(arr: np.ndarray, n_layers: int) -> np.ndarray:
@@ -192,8 +255,12 @@ def windowed_nearest(
         Distance to the nearest in-window data point; ``NaN`` where the window
         held no points. (Layer-independent — the same for every layer.)
     reduced : dict of str -> ndarray, shape (ny, nx, n_layers)
-        Each requested attribute, reduced over the minimum-distance ties.
-        ``NaN`` where no point was found.
+        Each requested attribute, reduced over the minimum-distance ties for the
+        ``mean``/``min``/``max`` reducers. The ``first`` reducer is the exception:
+        it takes the value from the **first data point (lowest index) whose window
+        contains the cell** — the whole window, not the tie set — matching the
+        MATLAB ``local_X(i,j) = X(filt)(1)`` pattern (used by MEP's acquisition
+        type). ``NaN`` where no point was found.
 
     Notes
     -----
@@ -247,9 +314,10 @@ def windowed_nearest(
     local_dist = np.where(np.isfinite(best), best, np.nan)
 
     # ---- Pass 2: reduce attributes over minimum-distance ties ----------------
+    tie_names = [n for n in attrs if reducers[n] != "first"]
     count = np.zeros((ny, nx), dtype=np.int64)
     accum = {}
-    for name in attrs:
+    for name in tie_names:
         red = reducers[name]
         if red == "mean":
             accum[name] = np.zeros((ny, nx, n_layers))
@@ -276,7 +344,7 @@ def windowed_nearest(
         gi = rows[ti]
         gj = cols[tj]
         np.add.at(count, (gi, gj), 1)
-        for name in attrs:
+        for name in tie_names:
             vals = attrs[name][p]  # (n_layers,)
             red = reducers[name]
             if red == "mean":
@@ -288,7 +356,7 @@ def windowed_nearest(
 
     has = count > 0
     reduced = {}
-    for name in attrs:
+    for name in tie_names:
         red = reducers[name]
         out = np.full((ny, nx, n_layers), np.nan)
         if red == "mean":
@@ -297,26 +365,103 @@ def windowed_nearest(
             out[has] = accum[name][has]
         reduced[name] = out
 
+    # ---- Pass 3: "first point in window" reducer -----------------------------
+    # Window membership (not the tie set) decides; the lowest-index point covering
+    # a cell wins. Iterating points in order and writing only where not yet seen
+    # makes "first" win. All "first" attributes share the same winning point, so a
+    # single per-cell ``seen`` mask drives them together.
+    first_names = [n for n in attrs if reducers[n] == "first"]
+    if first_names:
+        seen = np.zeros((ny, nx), dtype=bool)
+        for name in first_names:
+            reduced[name] = np.full((ny, nx, n_layers), np.nan)
+        for p in range(npoints):
+            px, py = xs[p], ys[p]
+            rows = np.nonzero((ylo < py) & (py < yhi))[0]
+            if rows.size == 0:
+                continue
+            cols = np.nonzero((xlo < px) & (px < xhi))[0]
+            if cols.size == 0:
+                continue
+            block = np.ix_(rows, cols)
+            new = ~seen[block]
+            if not new.any():
+                continue
+            ri, ci = np.nonzero(new)
+            gi = rows[ri]
+            gj = cols[ci]
+            for name in first_names:
+                reduced[name][gi, gj, :] = attrs[name][p]
+            seen[block] = True
+
     return local_dist, reduced
 
 
-def _range_map(complexity, comp2range, comp2range_preq, n_prereq, n_layers):
+def _resolve_group_layers(layers: LayerSelector, n_layers: int) -> List[int]:
+    """Resolve a :data:`LayerSelector` to a list of 0-based layer indices.
+
+    Out-of-range endpoints are clamped to ``0 .. n_layers-1`` (so an open-ended
+    or oversized range simply contributes the layers that exist); whether the
+    groups then tile the layer axis correctly is checked by :func:`_range_map`.
+    """
+    if isinstance(layers, str):
+        if layers.lower() == "all":
+            return list(range(n_layers))
+        raise ValueError(
+            f"unknown layer selector string {layers!r}; expected 'all', a "
+            f"(start, stop) tuple, or an explicit list of indices"
+        )
+    if isinstance(layers, tuple) and len(layers) == 2:
+        start, stop = layers
+        start = 0 if start is None else int(start)
+        stop = n_layers - 1 if stop is None else int(stop)
+        start = max(0, start)
+        stop = min(n_layers - 1, stop)
+        return list(range(start, stop + 1))
+    return [int(i) for i in layers]
+
+
+def _range_map(complexity, range_model, n_layers):
     """Build the per-layer effective-range grid from a complexity class grid.
 
-    Class ``0`` (unknown) -> ``NaN`` (cell ends up masked). Classes ``1..4`` map
-    through ``comp2range``; layers from ``n_prereq`` onward use
-    ``comp2range_preq`` instead. Verbatim from the MATLAB ``rangemap`` logic.
+    Class ``0`` (unknown) -> ``NaN`` (cell ends up masked). For each
+    :class:`RangeGroup`, classes ``1..`` map through that group's
+    ``range_by_complexity`` table and the result is written to the group's
+    layers. The groups must cover every modelled layer **exactly once** — a gap
+    or an overlap is a configuration error and raises ``ValueError``.
+
+    This is the model-agnostic generalisation of the MATLAB ``rangemap`` logic:
+    the Danish two-regime behaviour (base table for the Quaternary layers, a
+    pre-Quaternary override from ``n_prereq`` onward) is reproduced exactly by a
+    two-group ``range_model``.
     """
     complexity = np.asarray(complexity, dtype=float)
-    base = np.full(complexity.shape, np.nan)
-    preq = np.full(complexity.shape, np.nan)
-    for c in range(1, 5):
-        sel = complexity == c
-        base[sel] = comp2range[c]
-        preq[sel] = comp2range_preq[c]
-    rangemap = np.repeat(base[:, :, None], n_layers, axis=2)
-    if n_prereq < n_layers:
-        rangemap[:, :, n_prereq:] = preq[:, :, None]
+    ny, nx = complexity.shape
+    rangemap = np.full((ny, nx, n_layers), np.nan)
+    covered = np.zeros(n_layers, dtype=int)
+
+    for group in range_model:
+        layers = _resolve_group_layers(group.layers, n_layers)
+        table = np.asarray(group.range_by_complexity, dtype=float)
+        base = np.full((ny, nx), np.nan)
+        for c in range(1, table.size):
+            base[complexity == c] = table[c]
+        for layer in layers:
+            rangemap[:, :, layer] = base
+            covered[layer] += 1
+
+    missing = np.nonzero(covered == 0)[0]
+    if missing.size:
+        raise ValueError(
+            f"range_model leaves layer(s) {missing.tolist()} uncovered; every "
+            f"modelled layer (0..{n_layers - 1}) must belong to exactly one group"
+        )
+    overlap = np.nonzero(covered > 1)[0]
+    if overlap.size:
+        raise ValueError(
+            f"range_model covers layer(s) {overlap.tolist()} in more than one "
+            f"group; groups must be disjoint"
+        )
     return rangemap
 
 
@@ -359,13 +504,16 @@ def build_theme(
         n_layers,
     )
 
-    rangemap = _range_map(
-        data.complexity,
-        spec.comp2range,
-        spec.comp2range_preq,
-        spec.n_prereq,
-        n_layers,
-    )
+    if spec.post_reduce_fn is not None:
+        attrs = spec.post_reduce_fn(attrs)
+
+    complexity = data.complexity
+    if complexity is None:
+        # No complexity map supplied -> uniform class 1 (flat range, no
+        # complexity dependence). The complexity map is a Danish-specific input.
+        complexity = np.ones((grid_y.size, grid_x.size))
+
+    rangemap = _range_map(complexity, spec.range_model, n_layers)
 
     with np.errstate(invalid="ignore", divide="ignore"):
         var0map = spec.var0_fn(attrs)
