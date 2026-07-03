@@ -330,3 +330,28 @@ def _ttem_var0(a):
     var0 = (0.5 * 1.2 * a["thick"]) ** 2
     var0[a["depth"] < 2.0] = 10000.0
     return var0
+
+
+#: The built-in theme specs, keyed by the name a manifest uses in ``spec:``.
+#: Every factory has the signature ``factory(n_prereq, **spec_params)`` so a
+#: caller can resolve any of them uniformly (see
+#: :func:`geosigma.themes.data_io.resolve_theme_spec`): the Danish two-regime
+#: ``n_prereq`` is positional; theme-specific data-derived scalars (REFSEIS
+#: ``active_layers``, MEP ``doi_fill``) arrive as keyword ``spec_params``.
+THEME_SPEC_FACTORIES = {
+    "paces": paces_spec,
+    "pacep": pacep_spec,
+    "mep": mep_spec,
+    "gammalog": gammalog_spec,
+    "reslog": reslog_spec,
+    "refseis": refseis_spec,
+    "skytem": skytem_spec,
+    "fewtem": fewtem_spec,
+    "manytem": manytem_spec,
+    "ttem": ttem_spec,
+}
+
+
+def available_theme_specs():
+    """Return the sorted names of the built-in theme specs."""
+    return sorted(THEME_SPEC_FACTORIES)

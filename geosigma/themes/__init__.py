@@ -72,6 +72,7 @@ from .combine import apply_floor, combine_variances, corr_map, minimum_map
 from .model_theme import model_theme
 from .well import WellSet, build_well_theme
 from .io import read_variance_stack, write_variance_stack
+from .data_io import LoadedTheme, load_theme_data, resolve_theme_spec
 from . import themes
 
 __all__ = [
@@ -98,5 +99,8 @@ __all__ = [
     "model_theme",
     "read_variance_stack",
     "write_variance_stack",
+    "LoadedTheme",
+    "load_theme_data",
+    "resolve_theme_spec",
     "themes",
 ]
