@@ -94,7 +94,10 @@ import numpy as np
 from .base import ThemeData, ThemeSpec
 from .themes import THEME_SPEC_FACTORIES
 
-#: Manifest keys that must be present.
+#: Manifest keys that must be present. ``complexity`` is deliberately *not* here:
+#: its absence is handled by :func:`_resolve_complexity` so that a missing key
+#: gets the same explicit "declare it as a path / 'external' / 'none'" guidance as
+#: an explicit ``null`` — rather than the generic "missing required key" message.
 _REQUIRED_KEYS = (
     "name",
     "spec",
@@ -103,7 +106,6 @@ _REQUIRED_KEYS = (
     "x_column",
     "y_column",
     "attributes",
-    "complexity",
 )
 
 #: Explicit "no complexity grid" declarations (engine falls back to uniform).
@@ -234,13 +236,13 @@ def _load_grid(path):
 
 def _resolve_complexity(man, manifest_path, complexity, grid_meta):
     """Apply the explicit complexity contract; return the array (or ``None``)."""
-    decl = man["complexity"]
+    decl = man.get("complexity")
 
     if decl is None:
         raise ValueError(
-            f"{manifest_path}: complexity is null/unset. Declare it explicitly as a "
-            f"grid path, 'external' (supplied via the complexity= argument), or "
-            f"'none' (uniform range — the deliberate no-grid choice)."
+            f"{manifest_path}: complexity is unset (missing or null). Declare it "
+            f"explicitly as a grid path, 'external' (supplied via the complexity= "
+            f"argument), or 'none' (uniform range — the deliberate no-grid choice)."
         )
 
     # Explicit "no grid" -> uniform range (ThemeData.complexity stays None).

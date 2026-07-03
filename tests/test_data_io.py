@@ -167,7 +167,15 @@ def test_none_rejects_supplied_complexity(tmp_path):
 
 def test_null_complexity_is_an_error(tmp_path):
     man = _write_theme(tmp_path, complexity=None)
-    with pytest.raises(ValueError, match="null/unset"):
+    with pytest.raises(ValueError, match="unset .missing or null."):
+        load_theme_data(man)
+
+
+def test_missing_complexity_key_gets_the_options_message(tmp_path):
+    # A manifest with no complexity key at all must get the explicit three-option
+    # guidance, not the generic "missing required key" message.
+    man = _write_theme(tmp_path, drop_key="complexity")
+    with pytest.raises(ValueError, match="grid path.*external.*none"):
         load_theme_data(man)
 
 
