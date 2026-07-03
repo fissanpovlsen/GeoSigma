@@ -64,7 +64,10 @@ def _write_theme(
 
     cols = {x_column: _XS, y_column: _YS, "doi": _DOI}
     for j, name in enumerate(depth_cols):
-        cols[name] = _DEPTH[:, j]
+        # Tile the 3-column fixture so callers can request any number of
+        # per-layer columns (width/count tests need up to 10); values are
+        # irrelevant to those structural checks.
+        cols[name] = _DEPTH[:, j % _DEPTH.shape[1]]
     if csv_overrides:
         cols.update(csv_overrides)
     csv_path = tmp_path / "points.csv"
@@ -263,6 +266,83 @@ def test_per_layer_prefix_matches_nothing_raises(tmp_path):
     man = _write_theme(tmp_path, attributes=attrs)
     with pytest.raises(ValueError, match="matched no CSV columns"):
         load_theme_data(man, complexity=np.full((2, 3), 2.0))
+
+
+# --------------------------------------------------------------------------- #
+# Per-layer label-width rule (zero-padding enforced, not just documented)
+# --------------------------------------------------------------------------- #
+
+
+def test_unpadded_labels_raise_with_guidance(tmp_path):
+    # L1..L10 (10 columns) pass the count check but sort L1, L10, L2, ... —
+    # silent mis-assignment. The loader must catch the mixed width.
+    depth_cols = tuple(f"depth__L{i}" for i in range(1, 11))
+    man = _write_theme(
+        tmp_path,
+        n_layers=10,
+        depth_cols=depth_cols,
+        attributes={"depth": {"per_layer": True, "prefix": "depth__L"}},
+    )
+    with pytest.raises(ValueError, match="zero-padded to a constant width"):
+        load_theme_data(man, complexity=np.full((2, 3), 2.0))
+
+
+def test_padded_labels_load(tmp_path):
+    # L01..L10, constant width 2 — sorts in layer order, loads.
+    depth_cols = tuple(f"depth__L{i:02d}" for i in range(1, 11))
+    man = _write_theme(
+        tmp_path,
+        n_layers=10,
+        depth_cols=depth_cols,
+        attributes={"depth": {"per_layer": True, "prefix": "depth__L"}},
+    )
+    loaded = load_theme_data(man, complexity=np.full((2, 3), 2.0))
+    assert loaded.data.attributes["depth"].shape == (3, 10)
+
+
+def test_mixed_width_labels_raise(tmp_path):
+    # A deliberately mixed set (widths 2 and 3) — inconsistent, must raise.
+    depth_cols = ("depth__L01", "depth__L02", "depth__L003")
+    man = _write_theme(
+        tmp_path,
+        n_layers=3,
+        depth_cols=depth_cols,
+        attributes={"depth": {"per_layer": True, "prefix": "depth__L"}},
+    )
+    with pytest.raises(ValueError, match="inconsistent width"):
+        load_theme_data(man, complexity=np.full((2, 3), 2.0))
+
+
+# --------------------------------------------------------------------------- #
+# format_version
+# --------------------------------------------------------------------------- #
+
+
+def test_format_version_explicit_one_accepted(tmp_path):
+    man = _write_theme(tmp_path)
+    doc = yaml.safe_load(man.read_text(encoding="utf-8"))
+    doc["format_version"] = 1
+    man.write_text(yaml.safe_dump(doc), encoding="utf-8")
+    loaded = load_theme_data(man, complexity=np.full((2, 3), 2.0))
+    assert loaded.spec_name == "paces"
+
+
+def test_format_version_unsupported_raises(tmp_path):
+    man = _write_theme(tmp_path)
+    doc = yaml.safe_load(man.read_text(encoding="utf-8"))
+    doc["format_version"] = 2
+    man.write_text(yaml.safe_dump(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="unsupported format_version"):
+        load_theme_data(man, complexity=np.full((2, 3), 2.0))
+
+
+def test_format_version_absent_defaults_to_one(tmp_path):
+    # The synthetic manifest carries no format_version; it must load as v1.
+    man = _write_theme(tmp_path)
+    doc = yaml.safe_load(man.read_text(encoding="utf-8"))
+    assert "format_version" not in doc
+    loaded = load_theme_data(man, complexity=np.full((2, 3), 2.0))
+    assert loaded.spec_name == "paces"
 
 
 # --------------------------------------------------------------------------- #

@@ -28,6 +28,7 @@ The three-file format
 
 Manifest schema (mapping ``ThemeData`` + spec resolution)::
 
+    format_version: 1           # spec revision (optional; absent -> 1)
     name: REFSEIS               # human label
     spec: refseis               # a built-in factory in geosigma.themes.themes
     points_csv: refseis_points.csv
@@ -111,6 +112,12 @@ _REQUIRED_KEYS = (
 #: Explicit "no complexity grid" declarations (engine falls back to uniform).
 _COMPLEXITY_NONE = ("none", "uniform")
 
+#: Format revisions this loader understands. A manifest with no ``format_version``
+#: is treated as :data:`_DEFAULT_FORMAT_VERSION` (the ten Danish local manifests
+#: predate the key); an explicit unsupported value raises.
+_SUPPORTED_FORMAT_VERSIONS = (1,)
+_DEFAULT_FORMAT_VERSION = 1
+
 
 @dataclass
 class LoadedTheme:
@@ -158,7 +165,42 @@ def _load_manifest(manifest_path) -> dict:
         raise ValueError(
             f"{manifest_path}: manifest is missing required key(s): {missing}"
         )
+    version = man.get("format_version", _DEFAULT_FORMAT_VERSION)
+    if version not in _SUPPORTED_FORMAT_VERSIONS:
+        raise ValueError(
+            f"{manifest_path}: unsupported format_version {version!r}; this loader "
+            f"supports {list(_SUPPORTED_FORMAT_VERSIONS)}. Omit the key to default "
+            f"to version {_DEFAULT_FORMAT_VERSION}."
+        )
     return dict(man)
+
+
+def _check_label_width(cols, prefix, attr_name, manifest_path):
+    """Enforce constant-width per-layer labels.
+
+    The loader assigns a per-layer block's columns to layers in **lexicographic**
+    (text) sort order and never parses the label integers. Zero-padded labels of
+    constant width (``L01, L02, …, L43``) sort in layer order; mixed-width labels
+    (``L1`` vs ``L10``) sort as ``L1, L10, L11, …, L2`` and would map columns to
+    the **wrong** layers with no other symptom. Rather than trust the depositor to
+    pad, verify it: the suffix after ``prefix`` must be the same character width
+    for every matched column, which for the numeric ``LNN`` convention is exactly
+    the condition "alphabetical order equals layer order". A single mismatch
+    raises with the two offending columns named.
+    """
+    by_width = {}
+    for c in cols:
+        by_width.setdefault(len(c) - len(prefix), c)
+    if len(by_width) > 1:
+        wmin, wmax = min(by_width), max(by_width)
+        raise ValueError(
+            f"{manifest_path}: per-layer attribute {attr_name!r} has labels of "
+            f"inconsistent width after prefix {prefix!r}: {by_width[wmin]!r} "
+            f"(width {wmin}) and {by_width[wmax]!r} (width {wmax}). Per-layer "
+            f"labels must be zero-padded to a constant width so alphabetical order "
+            f"equals layer order (e.g. L01, L02, …, L43); otherwise columns are "
+            f"silently assigned to the wrong layers."
+        )
 
 
 def _read_attributes(df, attributes, n_layers, manifest_path):
@@ -196,6 +238,7 @@ def _read_attributes(df, attributes, n_layers, manifest_path):
                     f"{len(cols)} column(s) matching prefix {prefix!r} but the "
                     f"manifest declares n_layers={n_layers}"
                 )
+            _check_label_width(cols, prefix, attr_name, manifest_path)
             out[attr_name] = df[cols].to_numpy(dtype=float)
         else:
             col = block.get("column")
