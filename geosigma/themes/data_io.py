@@ -393,9 +393,7 @@ def load_theme_data(
     ys = df[man["y_column"]].to_numpy(dtype=float)
 
     if not isinstance(man["attributes"], Mapping) or not man["attributes"]:
-        raise ValueError(
-            f"{manifest_path}: 'attributes' must be a non-empty mapping"
-        )
+        raise ValueError(f"{manifest_path}: 'attributes' must be a non-empty mapping")
     attributes = _read_attributes(df, man["attributes"], n_layers, manifest_path)
 
     comp = _resolve_complexity(man, manifest_path, complexity, grid_meta)

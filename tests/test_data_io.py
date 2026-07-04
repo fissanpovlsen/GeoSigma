@@ -114,6 +114,7 @@ def _write_esri_grid(path, *, ncols, nrows, cellsize, xll, yll, value=2.0):
 # Happy-path round trip
 # --------------------------------------------------------------------------- #
 
+
 def test_round_trip_reassembles_arrays(tmp_path):
     man = _write_theme(tmp_path)
     complexity = np.full((2, 3), 2.0)
@@ -149,6 +150,7 @@ def test_loaded_theme_builds_a_grid(tmp_path):
 # --------------------------------------------------------------------------- #
 # Complexity contract
 # --------------------------------------------------------------------------- #
+
 
 def test_external_requires_complexity_argument(tmp_path):
     man = _write_theme(tmp_path, complexity="external")
@@ -220,6 +222,7 @@ def test_complexity_path_rejects_supplied_array(tmp_path):
 # --------------------------------------------------------------------------- #
 # Manifest / CSV validation errors
 # --------------------------------------------------------------------------- #
+
 
 def test_missing_required_key_raises(tmp_path):
     man = _write_theme(tmp_path, drop_key="spec")
@@ -348,6 +351,7 @@ def test_format_version_absent_defaults_to_one(tmp_path):
 # --------------------------------------------------------------------------- #
 # Spec resolution
 # --------------------------------------------------------------------------- #
+
 
 def test_resolve_unknown_spec_raises():
     with pytest.raises(ValueError, match="unknown theme spec"):
