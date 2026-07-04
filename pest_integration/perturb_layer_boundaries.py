@@ -51,55 +51,53 @@ def perturb_layer_boundaries(
     -----
     top_surface.tif is always copied unchanged.
     """
-    
+
     folder = Path(folder)
 
     out_dir = folder / output_folder
     out_dir.mkdir(parents=True, exist_ok=True)
 
-
     print(f"Method: {method}")
-
 
     # ------------------------------------------------------------
     # Method: shift
     # ------------------------------------------------------------
-    
+
     if method == "shift":
-    
+
         tif_files = sorted(folder.glob("*.tif"))
 
         print(f"Found {len(tif_files)} GeoTIFF files")
-        
+
         for fname in tif_files:
-    
+
             name = fname.stem
-    
+
             print(f"Processing: {fname.name}")
-    
+
             with rasterio.open(fname) as src:
-    
+
                 z = src.read(1)
                 profile = src.profile.copy()
                 nodata = src.nodata
-    
+
             # --------------------------------------------------------
             # Terrain unchanged, other layers shifted
             # --------------------------------------------------------
-    
+
             if name.lower() == "top_surface":
                 z_new = z.copy()
-    
+
             else:
-    
+
                 z_new = z.astype(float).copy()
-    
+
                 if nodata is not None:
                     mask = z_new == nodata
                     z_new[~mask] -= k
                 else:
                     z_new -= k
-                    
+
             # --------------------------------------------------------
             # Output
             # --------------------------------------------------------
@@ -113,7 +111,6 @@ def perturb_layer_boundaries(
 
             print(f"  -> wrote {out_name}")
 
-
     # --------------------------------------------------------
     # Method: realization
     # --------------------------------------------------------
@@ -122,53 +119,36 @@ def perturb_layer_boundaries(
 
         realization_dir = folder / f"realization{k}"
 
-        
         if not realization_dir.exists():
-            raise FileNotFoundError(
-                f"Realization folder not found: {realization_dir}"
-                )
+            raise FileNotFoundError(f"Realization folder not found: {realization_dir}")
 
-    
         # clean output folder
         for f in out_dir.glob("*.tif"):
             f.unlink()
-    
+
         # select files
         if layers is None:
             tif_files = list(realization_dir.glob("*.tif"))
         else:
             # ensure list for safe handling
             layers = set(layers)
-    
-            tif_files = [
-                f for f in realization_dir.glob("*.tif")
-                if f.name in layers
-        ]
 
+            tif_files = [f for f in realization_dir.glob("*.tif") if f.name in layers]
 
         if not tif_files:
-            raise ValueError(
-                "No matching layers found to copy."
-            )
-
+            raise ValueError("No matching layers found to copy.")
 
         print(f"Using realization {k}")
-        print(f"Found {len(tif_files)} GeoTIFF files")        
+        print(f"Found {len(tif_files)} GeoTIFF files")
         print(f"Copying {len(tif_files)} GeoTIFF files")
 
         for tif_file in tif_files:
-            shutil.copy2(
-                tif_file,
-                out_dir / tif_file.name
-                )
+            shutil.copy2(tif_file, out_dir / tif_file.name)
 
         return
 
     else:
-    
-        raise ValueError(
-            f"Unknown method '{method}'"
-        )
+
+        raise ValueError(f"Unknown method '{method}'")
 
     print("Done.")
- 

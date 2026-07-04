@@ -65,8 +65,12 @@ def laplacian_2d(surface, dx=1.0, dy=1.0):
     lapl : 2D ndarray
     """
 
-    d2x = (np.roll(surface, -1, axis=1) - 2 * surface + np.roll(surface, 1, axis=1)) / dx**2
-    d2y = (np.roll(surface, -1, axis=0) - 2 * surface + np.roll(surface, 1, axis=0)) / dy**2
+    d2x = (
+        np.roll(surface, -1, axis=1) - 2 * surface + np.roll(surface, 1, axis=1)
+    ) / dx**2
+    d2y = (
+        np.roll(surface, -1, axis=0) - 2 * surface + np.roll(surface, 1, axis=0)
+    ) / dy**2
 
     lapl = d2x + d2y
 
@@ -226,4 +230,3 @@ def visualize_transfer_function(surface, ext_vals, dx=1.0, dy=1.0, lap_max=10):
     plt.title("Transfer function vs Laplacian distribution")
     plt.tight_layout()
     plt.show()
-    

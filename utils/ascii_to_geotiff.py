@@ -12,12 +12,7 @@ import rasterio
 from rasterio.transform import from_origin
 
 
-def ascii_to_geotiff(
-    ascii_path,
-    tif_path=None,
-    crs=None,
-    crop_extent=None
-):
+def ascii_to_geotiff(ascii_path, tif_path=None, crs=None, crop_extent=None):
     """
     Convert ESRI ASCII grid to GeoTIFF.
 
@@ -95,10 +90,10 @@ def ascii_to_geotiff(
         # Convert map coordinates -> array indices
 
         col_start = int((xmin - xmin_full) / cellsize)
-        col_end   = int((xmax - xmin_full) / cellsize)
+        col_end = int((xmax - xmin_full) / cellsize)
 
         row_start = int((ymax_full - ymax) / cellsize)
-        row_end   = int((ymax_full - ymin) / cellsize)
+        row_end = int((ymax_full - ymin) / cellsize)
 
         # Clip to raster bounds
 
@@ -130,12 +125,7 @@ def ascii_to_geotiff(
     # Create transform
     # --------------------------------------------------------------
 
-    transform = from_origin(
-        xul,
-        yul,
-        cellsize,
-        cellsize
-    )
+    transform = from_origin(xul, yul, cellsize, cellsize)
 
     # --------------------------------------------------------------
     # Save GeoTIFF
@@ -152,7 +142,7 @@ def ascii_to_geotiff(
         crs=crs,
         transform=transform,
         nodata=nodata,
-        compress="lzw"
+        compress="lzw",
     ) as dst:
 
         out = np.where(np.isnan(data), nodata, data)

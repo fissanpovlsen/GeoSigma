@@ -116,8 +116,9 @@ def _pacep_post_reduce(a):
     return a
 
 
-def mep_spec(n_prereq: int, doi_fill: float,
-             cert_fun_name: str = "ILM_sep2023") -> ThemeSpec:
+def mep_spec(
+    n_prereq: int, doi_fill: float, cert_fun_name: str = "ILM_sep2023"
+) -> ThemeSpec:
     """MEP (multi-electrode profiling) theme (search radius 2; plateau width 75).
 
     Two MEP-specific wrinkles, both transcribed from ``get_MEP_theme.m``:
@@ -154,7 +155,7 @@ def _mep_var0(a):
     # is_wenner is 1 / 0 / NaN (no point); the NaN propagates to NODATA downstream.
     depth = a["depth"]
     is_wenner = a["mep_type"]
-    is_other = (is_wenner == 0)
+    is_other = is_wenner == 0
     wenner_var0 = 0.5 * np.maximum(2.4, 0.25 * depth)
     other_var0 = 0.5 * np.maximum(1.25, 0.15 * depth)
     return (wenner_var0 * is_wenner + other_var0 * is_other) ** 2

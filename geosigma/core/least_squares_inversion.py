@@ -1,11 +1,12 @@
 import numpy as np
 import time
 
+
 def least_squares_inversion(G, Cm, Cd, m0, d0, type=2, use_tqdm=True):
     """
     Linear least-squares inversion following Tarantola (2005), Eq. (16-17)
-    Based upon a Matlab implementation in the "mGstat" package by Thomas Mejer Hansen  
-    
+    Based upon a Matlab implementation in the "mGstat" package by Thomas Mejer Hansen
+
     Parameters
     ----------
     G : ndarray (n_data x n_model)
@@ -22,7 +23,7 @@ def least_squares_inversion(G, Cm, Cd, m0, d0, type=2, use_tqdm=True):
         Algorithm variant (1 or 2). Default is 2.
     use_tqdm : bool, optional
         If True, shows a progress bar (like waitbar in MATLAB)
-    
+
     Returns
     -------
     m_est : ndarray
@@ -31,14 +32,14 @@ def least_squares_inversion(G, Cm, Cd, m0, d0, type=2, use_tqdm=True):
         Posterior model covariance matrix
     """
 
-   # t1 = time.time()
+    # t1 = time.time()
 
     # If m0 is scalar, make it a vector
     if np.isscalar(m0):
         m0 = np.ones(G.shape[1]) * m0
 
     # Progress bar for visual feedback (optional)
-    #iterator = tqdm(total=1, desc="Least-squares inversion", disable=not use_tqdm)
+    # iterator = tqdm(total=1, desc="Least-squares inversion", disable=not use_tqdm)
 
     if type == 2:
         # Compute data covariance in data space
@@ -63,10 +64,10 @@ def least_squares_inversion(G, Cm, Cd, m0, d0, type=2, use_tqdm=True):
         PP = Cm @ G.T @ T @ G
         Cm_est = Cm - PP[:, goodG] @ Cm[goodG, :]
 
-  #  iterator.update(1)
-  #  iterator.close()
+    #  iterator.update(1)
+    #  iterator.close()
 
-   # t2 = time.time()
-    #print(f"Elapsed time: {t2 - t1:.2f} s")
+    # t2 = time.time()
+    # print(f"Elapsed time: {t2 - t1:.2f} s")
 
     return m_est, Cm_est

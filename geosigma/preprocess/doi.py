@@ -124,16 +124,16 @@ def resolve_doi(
     # Resolve the regional fallback once (mean of finite reported DOIs).
     if fallback_doi is None:
         finite = doi[np.isfinite(doi)]
-        fallback_doi = float(finite.mean()) if finite.size else float(fallback_when_empty)
+        fallback_doi = (
+            float(finite.mean()) if finite.size else float(fallback_when_empty)
+        )
     fallback_doi = float(fallback_doi)
 
     if horizon_top is None:
         est = np.full(doi.shape, fallback_doi)
     else:
         if horizon_thickness is None:
-            raise ValueError(
-                "horizon_thickness is required when horizon_top is given"
-            )
+            raise ValueError("horizon_thickness is required when horizon_top is given")
         top = np.asarray(horizon_top, dtype=float)
         thickness = np.asarray(horizon_thickness, dtype=float)
         if top.shape != doi.shape or thickness.shape != doi.shape:

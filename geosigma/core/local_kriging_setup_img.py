@@ -1,7 +1,18 @@
 import numpy as np
 from .precal_cov import precal_cov
 
-def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_noise_rat, dx=100, dy=100, verbose=False):
+
+def local_kriging_setup_img(
+    GLOBAL,
+    i_buf,
+    ip_buf,
+    curvariance,
+    currange,
+    cor_noise_rat,
+    dx=100,
+    dy=100,
+    verbose=False,
+):
     """
     Set up local kriging matrices for image-based inversion or estimation.
 
@@ -40,29 +51,26 @@ def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_no
     m0 : ndarray
         Prior mean model (currently zero vector).
     """
-    
+
     # Active points only
     i_buf_local = np.where(i_buf)[0]  # indices of active points
-    
 
     # --- Forward matrix G ---
     G = np.eye(len(i_buf_local))[ip_buf[i_buf_local], :]  # use only active cells
-    
+
     # --- Model covariance Cm ---
     # Coordinates of model cells (scaled by dx, dy)
-    coords_cm = np.column_stack((
-        GLOBAL["xx_norm"][i_buf] * dx,
-        GLOBAL["yy_norm"][i_buf] * dy
-    ))
+    coords_cm = np.column_stack(
+        (GLOBAL["xx_norm"][i_buf] * dx, GLOBAL["yy_norm"][i_buf] * dy)
+    )
     statmod_var = f"{curvariance} Gau({currange})"
     Cm, _ = precal_cov(coords_cm, coords_cm, statmod_var)
 
     # --- Data covariance Cd ---
     # Coordinates of conditioning data points
-    coords_cd = np.column_stack((
-        GLOBAL["xx_norm"][ip_buf] * dx,
-        GLOBAL["yy_norm"][ip_buf] * dy
-    ))
+    coords_cd = np.column_stack(
+        (GLOBAL["xx_norm"][ip_buf] * dx, GLOBAL["yy_norm"][ip_buf] * dy)
+    )
     statmod_noi = f"{curvariance} Gau({currange})"
     Cd_shape, _ = precal_cov(coords_cd, coords_cd, statmod_noi)
 
@@ -71,17 +79,19 @@ def local_kriging_setup_img(GLOBAL, i_buf, ip_buf, curvariance, currange, cor_no
     Cd_diag = np.diag(img_unc_vec)
 
     # Combine correlated and uncorrelated components
-    Cd = Cd_diag @ (cor_noise_rat * Cd_shape + (1 - cor_noise_rat) * np.eye(len(Cd_shape))) @ Cd_diag
+    Cd = (
+        Cd_diag
+        @ (cor_noise_rat * Cd_shape + (1 - cor_noise_rat) * np.eye(len(Cd_shape)))
+        @ Cd_diag
+    )
 
     # --- Observed data ---
     d_obs = np.asarray(GLOBAL["img_dobs"][ip_buf], dtype=float)
 
     # --- Prior mean model ---
     m0 = np.zeros(len(i_buf_local))
-    
+
     if verbose:
         print("local_kriging_setup_img: Setup all kriging matrices")
-
-    
 
     return G, Cm, Cd, d_obs, m0

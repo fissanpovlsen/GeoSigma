@@ -17,9 +17,12 @@ from .core import (
     least_squares_inversion,
     get_reals_cholesky,
 )
-from .inpox import draw_points_inpox,ftot_laplace,laplacian_2d,visualize_transfer_function
-
-
+from .inpox import (
+    draw_points_inpox,
+    ftot_laplace,
+    laplacian_2d,
+    visualize_transfer_function,
+)
 
 __all__ = [
     "precal_cov",
@@ -32,5 +35,5 @@ __all__ = [
     "draw_points_inpox",
     "ftot_laplace",
     "laplacian_2d",
-    "visualize_transfer_function"
+    "visualize_transfer_function",
 ]

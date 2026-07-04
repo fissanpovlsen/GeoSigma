@@ -152,13 +152,32 @@ def format_layers(selector: LayerSelector) -> Any:
 # Subscript, comprehensions, lambdas, walrus, starred, f-strings, …) is rejected.
 _ALLOWED_NODES = (
     ast.Expression,
-    ast.BinOp, ast.UnaryOp, ast.BoolOp, ast.Compare, ast.Call,
-    ast.Name, ast.Load, ast.Constant,
+    ast.BinOp,
+    ast.UnaryOp,
+    ast.BoolOp,
+    ast.Compare,
+    ast.Call,
+    ast.Name,
+    ast.Load,
+    ast.Constant,
     # operators
-    ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow,
-    ast.USub, ast.UAdd,
-    ast.And, ast.Or,
-    ast.Lt, ast.Gt, ast.LtE, ast.GtE, ast.Eq, ast.NotEq,
+    ast.Add,
+    ast.Sub,
+    ast.Mult,
+    ast.Div,
+    ast.FloorDiv,
+    ast.Mod,
+    ast.Pow,
+    ast.USub,
+    ast.UAdd,
+    ast.And,
+    ast.Or,
+    ast.Lt,
+    ast.Gt,
+    ast.LtE,
+    ast.GtE,
+    ast.Eq,
+    ast.NotEq,
 )
 
 
@@ -170,9 +189,7 @@ class _ExprValidator(ast.NodeVisitor):
 
     def generic_visit(self, node):
         if not isinstance(node, _ALLOWED_NODES):
-            raise ValueError(
-                f"disallowed expression element: {type(node).__name__}"
-            )
+            raise ValueError(f"disallowed expression element: {type(node).__name__}")
         super().generic_visit(node)
 
     def visit_Constant(self, node):
@@ -225,8 +242,16 @@ def compile_expr(expr: str, attribute_names):
 # dict <-> ThemeSpec
 # ---------------------------------------------------------------------------
 
-_REQUIRED_KEYS = ("name", "search_radius", "cert_fun", "attributes",
-                  "range_model", "var0", "kernel", "mask")
+_REQUIRED_KEYS = (
+    "name",
+    "search_radius",
+    "cert_fun",
+    "attributes",
+    "range_model",
+    "var0",
+    "kernel",
+    "mask",
+)
 
 
 def load_spec(d: Mapping[str, Any]) -> ThemeSpec:
@@ -290,6 +315,7 @@ def dump_spec(spec: ThemeSpec) -> dict:
     formulae are lambdas (the Danish built-ins) cannot be serialised — a clear
     error is raised rather than emitting an opaque ``<lambda>``.
     """
+
     def _expr(fn, what):
         src = getattr(fn, "expr", None)
         if src is None:

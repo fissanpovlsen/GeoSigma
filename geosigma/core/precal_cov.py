@@ -3,6 +3,7 @@ from .edist import edist
 from .semivar_synth import semivar_synth
 from .deformat_variogram import deformat_variogram
 
+
 def precal_cov(pos1, pos2, V, options=None):
     """
     Compute covariance matrix based on variogram(s).

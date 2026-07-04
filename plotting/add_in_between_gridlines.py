@@ -5,7 +5,10 @@ Created on Thu Nov 13 10:26:15 2025
 @author: rbm
 """
 
-def add_in_between_gridlines(ax, x, y, color='white', lw=0.5, ls='--', alpha=1.0, axisbelow=False):
+
+def add_in_between_gridlines(
+    ax, x, y, color="white", lw=0.5, ls="--", alpha=1.0, axisbelow=False
+):
     """
     Add gridlines in between existing x and y tick positions on an Axes.
 

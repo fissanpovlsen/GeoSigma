@@ -1,9 +1,10 @@
 import numpy as np
 
+
 def semivar_synth(V, d):
     """
     Compute semivariance for a given variogram model.
-    This code is based upon a translation of mGstat, a Matlab geostatistical code library by Thomas Mejer Hansen  
+    This code is based upon a translation of mGstat, a Matlab geostatistical code library by Thomas Mejer Hansen
 
     Parameters
     ----------
@@ -19,8 +20,8 @@ def semivar_synth(V, d):
     -------
     gamma : ndarray
         Semivariance matrix.
-        
-        
+
+
     """
     model = V["type"].lower()
     var = V["par1"]
@@ -30,12 +31,12 @@ def semivar_synth(V, d):
 
     if model.startswith("sph"):
         mask = h < range_
-        gamma[mask] = var * (1.5*(h[mask]/range_) - 0.5*(h[mask]/range_)**3)
+        gamma[mask] = var * (1.5 * (h[mask] / range_) - 0.5 * (h[mask] / range_) ** 3)
         gamma[~mask] = var
     elif model.startswith("exp"):
-        gamma = var * (1 - np.exp(-3*h/range_))
+        gamma = var * (1 - np.exp(-3 * h / range_))
     elif model.startswith("gau"):
-        gamma = var * (1 - np.exp(-(h/range_)**2))
+        gamma = var * (1 - np.exp(-((h / range_) ** 2)))
     else:
         raise ValueError(f"Unknown variogram model '{V['type']}'")
 

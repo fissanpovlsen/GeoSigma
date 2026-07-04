@@ -1,10 +1,11 @@
 import numpy as np
 
+
 def edist(p1, p2=None, transform=None, isorange=False):
     """
     Compute Euclidean distance between two sets of points.
     Currently only isotropic variograms are supported.
-    This code is based upon a translation of mGstat, a Matlab geostatistical code library by Thomas Mejer Hansen  
+    This code is based upon a translation of mGstat, a Matlab geostatistical code library by Thomas Mejer Hansen
 
 
     Parameters
@@ -22,7 +23,7 @@ def edist(p1, p2=None, transform=None, isorange=False):
         Euclidean distance matrix.
     dp : ndarray, shape (n1, n2, ndim)
         Coordinate differences.
-        
+
     """
     if transform is not None:
         raise NotImplementedError(

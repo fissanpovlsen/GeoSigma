@@ -14,43 +14,43 @@ import numpy as np
 from utils import load_geotiff_grid, grid_coordinates_from_esri_meta
 from pest_integration import perturb_layer_boundaries
 
-
-#%% Run pertubation shift
+# %% Run pertubation shift
 k = 50
 
-perturb_layer_boundaries("examples/data/Jutland_hydrostrat_model/",k,method="shift")
+perturb_layer_boundaries("examples/data/Jutland_hydrostrat_model/", k, method="shift")
 
 
-#%% Run pertubation realization
+# %% Run pertubation realization
 k = 2
 
-layers = ['topo.tif',
-          '0010_Post_Glacial_Ler_Toerv_Gytje_bund.tif',
-          '1100_Kvartaer_ler_Bund.tif',
-          '1200_Kvartaer_sand_Bund.tif',
-          '1300_Kvartaer_ler_Bund.tif',
-          '1400_Kvartaer_sand_Bund.tif',
-          '1500_Kvartaer_ler_Bund.tif',
-          '2100_Kvartaer_sand_Bund.tif',
-          '2200_Kvartaer_ler_Bund.tif',
-          '2300_Kvartaer_sand_Bund.tif',
-          '2400_Preq_Kvartaer_ler_Bund.tif',
-          '7400_Billund_BDS2_Bund.tif',
-          '7800_Billund_BDS0_Bund.tif',
-          '8000_Palaeogen_ler_Bund.tif',
-          '8500_Danien_Kalk_Bund.tif',
-          '9000_Skrivekridt_Bund.tif'];
-perturb_layer_boundaries("examples/data/Reals/",k,method="realization",layers=layers)
+layers = [
+    "topo.tif",
+    "0010_Post_Glacial_Ler_Toerv_Gytje_bund.tif",
+    "1100_Kvartaer_ler_Bund.tif",
+    "1200_Kvartaer_sand_Bund.tif",
+    "1300_Kvartaer_ler_Bund.tif",
+    "1400_Kvartaer_sand_Bund.tif",
+    "1500_Kvartaer_ler_Bund.tif",
+    "2100_Kvartaer_sand_Bund.tif",
+    "2200_Kvartaer_ler_Bund.tif",
+    "2300_Kvartaer_sand_Bund.tif",
+    "2400_Preq_Kvartaer_ler_Bund.tif",
+    "7400_Billund_BDS2_Bund.tif",
+    "7800_Billund_BDS0_Bund.tif",
+    "8000_Palaeogen_ler_Bund.tif",
+    "8500_Danien_Kalk_Bund.tif",
+    "9000_Skrivekridt_Bund.tif",
+]
+perturb_layer_boundaries("examples/data/Reals/", k, method="realization", layers=layers)
 
 
-
-#%% Load and plot results and original
+# %% Load and plot results and original
 
 # ============================================================
 # Load all GeoTIFF surfaces
 # ============================================================
 
-#folder = "examples/data/Jutland_hydrostrat_model/perturbed"
+# folder = "examples/data/Jutland_hydrostrat_model/perturbed"
 folder = "examples/data/Reals/perturbed"
 
 # Find all tif files
@@ -76,15 +76,16 @@ for fname in tif_files:
     # Mean elevation (used for sorting)
     z_mean = np.nanmean(z)
 
-    surfaces.append({
-        "name": os.path.basename(fname),
-        "z": z,
-        "meta": meta,
-        "mean": z_mean,
-    })
+    surfaces.append(
+        {
+            "name": os.path.basename(fname),
+            "z": z,
+            "meta": meta,
+            "mean": z_mean,
+        }
+    )
 
-    print(f"Loaded: {os.path.basename(fname)} "
-          f"(mean elevation = {z_mean:.2f} m)")
+    print(f"Loaded: {os.path.basename(fname)} " f"(mean elevation = {z_mean:.2f} m)")
 
 
 # ============================================================
@@ -102,9 +103,7 @@ for s in surfaces:
 # Coordinates from first surface
 # ============================================================
 
-x, y, xx, yy = grid_coordinates_from_esri_meta(
-    surfaces[0]["meta"]
-)
+x, y, xx, yy = grid_coordinates_from_esri_meta(surfaces[0]["meta"])
 
 extent = [x.min(), x.max(), y.min(), y.max()]
 
@@ -168,10 +167,6 @@ cbar.set_label("Elevation [m]")
 
 plt.tight_layout()
 plt.show()
-
-
-
-
 
 
 # ============================================================
@@ -203,15 +198,16 @@ for fname in tif_files:
     # Mean elevation (used for sorting)
     z_mean = np.nanmean(z)
 
-    surfaces.append({
-        "name": os.path.basename(fname),
-        "z": z,
-        "meta": meta,
-        "mean": z_mean,
-    })
+    surfaces.append(
+        {
+            "name": os.path.basename(fname),
+            "z": z,
+            "meta": meta,
+            "mean": z_mean,
+        }
+    )
 
-    print(f"Loaded: {os.path.basename(fname)} "
-          f"(mean elevation = {z_mean:.2f} m)")
+    print(f"Loaded: {os.path.basename(fname)} " f"(mean elevation = {z_mean:.2f} m)")
 
 
 # ============================================================
@@ -229,9 +225,7 @@ for s in surfaces:
 # Coordinates from first surface
 # ============================================================
 
-x, y, xx, yy = grid_coordinates_from_esri_meta(
-    surfaces[0]["meta"]
-)
+x, y, xx, yy = grid_coordinates_from_esri_meta(surfaces[0]["meta"])
 
 extent = [x.min(), x.max(), y.min(), y.max()]
 
@@ -295,5 +289,3 @@ cbar.set_label("Elevation [m]")
 
 plt.tight_layout()
 plt.show()
-
-

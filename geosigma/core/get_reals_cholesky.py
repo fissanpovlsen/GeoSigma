@@ -1,9 +1,10 @@
 import numpy as np
 
+
 def get_reals_cholesky(cov, Nreals=1, m0=None, verbose=False):
     """
     Generate realizations from a covariance matrix using Cholesky decomposition.
-    
+
     Parameters
     ----------
     cov : np.ndarray
@@ -14,7 +15,7 @@ def get_reals_cholesky(cov, Nreals=1, m0=None, verbose=False):
         Mean vector. If None, defaults to zero vector.
         If scalar, broadcast to vector of length n.
         If array, must have length n.
-    
+
     Returns
     -------
     reals : np.ndarray
@@ -30,19 +31,22 @@ def get_reals_cholesky(cov, Nreals=1, m0=None, verbose=False):
     else:
         m0 = np.asarray(m0)
         if m0.shape[0] != nvar:
-            raise ValueError(f"Length of m0 ({m0.shape[0]}) does not match covariance size ({nvar}).")
+            raise ValueError(
+                f"Length of m0 ({m0.shape[0]}) does not match covariance size ({nvar})."
+            )
 
     # Cholesky decomposition
     UT = np.linalg.cholesky(cov + 1e-5 * np.eye(nvar))
-    
+
     # Generate realizations
     reals = UT @ np.random.randn(nvar, Nreals)
 
     # Add mean
     reals += m0[:, None]
-    
-    if verbose:
-        print(f"get_reals_cholesky: generated {Nreals} realization(s) with {nvar} variables.")
 
-    
+    if verbose:
+        print(
+            f"get_reals_cholesky: generated {Nreals} realization(s) with {nvar} variables."
+        )
+
     return reals

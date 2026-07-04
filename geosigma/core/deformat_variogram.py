@@ -1,10 +1,12 @@
 import re
-#import numpy as np
+
+# import numpy as np
+
 
 def deformat_variogram(txt):
     """
     Parse MATLAB-style variogram string into Python dict.
-    This code is based upon a translation of mGstat, a Matlab geostatistical code library by Thomas Mejer Hansen  
+    This code is based upon a translation of mGstat, a Matlab geostatistical code library by Thomas Mejer Hansen
 
 
     Parameters

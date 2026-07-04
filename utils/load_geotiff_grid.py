@@ -29,8 +29,8 @@ def load_geotiff_grid(fname):
         z = ds.read(1)  # first band
         transform = ds.transform
 
-        dx = transform.a            # pixel width  (east, positive)
-        dy = -transform.e           # pixel height (north); transform.e is < 0
+        dx = transform.a  # pixel width  (east, positive)
+        dy = -transform.e  # pixel height (north); transform.e is < 0
         # Lower-left corner: upper-left y (transform.f) plus nrows * e (e < 0).
         yllcorner = transform.f + ds.height * transform.e
 
