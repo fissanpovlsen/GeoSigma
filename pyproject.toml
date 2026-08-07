@@ -1,6 +1,82 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "geosigma"
+version = "0.1.0"
+description = "Geostatistical uncertainty modelling of 3D subsurface layer boundaries in hydrostratigraphic models."
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "Rasmus Bødker Madsen", email = "rbm@geus.dk" },
+]
+maintainers = [
+    { name = "Rasmus Bødker Madsen", email = "rbm@geus.dk" },
+]
+keywords = [
+    "geostatistics",
+    "hydrostratigraphy",
+    "uncertainty",
+    "kriging",
+    "geophysics",
+    "subsurface",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+
+# Verified against the actual imports of geosigma/, utils/, plotting/ and
+# pest_integration/ (AST walk, not a guess). Note the absentees: scipy, h5py and
+# cmcrameri are NOT imported anywhere in the library — they belong to the private
+# validation harness under examples/, so they are deliberately not declared here.
+# `affine` is imported directly by utils/grid_meta.py, so it is named explicitly
+# rather than leaned on as a transitive rasterio dependency.
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "rasterio",
+    "affine",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+]
+
+[project.urls]
+Homepage = "https://github.com/rbm-geus/GeoSigma"
+Repository = "https://github.com/rbm-geus/GeoSigma"
+
+[tool.setuptools.packages.find]
+include = [
+    "geosigma*",
+    "utils*",
+    "plotting*",
+    "pest_integration*",
+]
+
+# ReadSurfer7.py still lives at the repo root and is imported by
+# utils/load_surfer7_grid.py, so it has to ship as a top-level module for an
+# installed (non-editable) geosigma to be able to read Surfer 7 grids. The other
+# root-level scripts (get_*_theme.py, certainty_function_definer.py,
+# import_complexitymap.py, main.py) are legacy translation scripts superseded by
+# geosigma/themes/ and are intentionally not packaged.
+[tool.setuptools]
+py-modules = ["ReadSurfer7"]
 
 [tool.pytest.ini_options]
 # Put the repo root on sys.path so tests can import the top-level `utils`,
