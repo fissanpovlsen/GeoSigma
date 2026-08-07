@@ -35,7 +35,7 @@ Example data (the Jutland hydrostratigraphic model) is included in `examples/dat
 
 GeoSigma is developed at the Geological Survey of Denmark and Greenland (GEUS) as a clean Python reimplementation of a MATLAB-based workflow originally developed for generating stochastic realizations of the national-scale hydrostratigraphic model of Denmark. The original MATLAB source is included in `matlab_reference/` for reference and is not intended to be run directly.
 
-Some core functions are adapted from the open-source [mGstat](https://github.com/cultpenguin/mGstat) MATLAB library (H. Madsen); those files carry individual credit notices.
+Some core functions are adapted from the open-source [mGstat](https://github.com/cultpenguin/mGstat) MATLAB library (T.M. Hansen); those files carry individual credit notices.
 
 ## License
 
