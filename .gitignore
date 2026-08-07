@@ -8,6 +8,10 @@ __pycache__/
 grid_conversion_DKM345.py
 TRANSLATION_PLAN.md
 
+# Seed of the Hydrogeology Journal methods section — the argued Danish choices.
+# LOCAL only; must not be published pre-submission.
+DANISH_CHOICES.md
+
 
 # Private validation data — not for public release
 examples/data/var_map_demo/*
@@ -17,5 +21,7 @@ examples/data/var_map_demo/*
 # anonymised public themes demo (see TRANSLATION_PLAN.md "Final step") ships.
 examples/var_map_demo_adapter.py
 examples/demo_validate_themes_vs_matlab.py
+examples/diag_combine_tail.py
+examples/extract_combine_crop.py
 examples/output/
 tools/inventory_plotting_mat.py
