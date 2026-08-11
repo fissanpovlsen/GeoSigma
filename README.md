@@ -74,6 +74,11 @@ Example data (the Jutland hydrostratigraphic model) is included in `examples/dat
 > MPLBACKEND=Agg python examples/demo_synthetic_kriging_inversion.py
 > ```
 
+## Documentation
+
+- [`docs/theme_format.md`](docs/theme_format.md) — the ThemeData three-file format: the portable, model-agnostic bundle (points CSV, manifest, optional complexity grid) in which a theme's input data are supplied and archived.
+- [`docs/bring_your_own_data.md`](docs/bring_your_own_data.md) — the scientific-choices guide: the twelve modelling decisions behind a theme, how to reason about each for your own region and data, and a complete worked example.
+
 ## Background
 
 GeoSigma is developed at the Geological Survey of Denmark and Greenland (GEUS) as a clean Python reimplementation of a MATLAB-based workflow originally developed for generating stochastic realizations of the national-scale hydrostratigraphic model of Denmark. The original MATLAB source is included in `matlab_reference/` for reference and is not intended to be run directly.
