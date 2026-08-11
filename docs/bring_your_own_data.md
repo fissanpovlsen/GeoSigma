@@ -431,6 +431,7 @@ We make each of the twelve choices explicitly.
 ```python
 import numpy as np
 from geosigma.themes import (
+    ThemeData,
     ThemeSpec,
     RangeGroup,
     register_certainty_function,
@@ -475,16 +476,75 @@ spec = ThemeSpec(
 )
 ```
 
-With `complexity: none` declared in the manifest (choice 3's "no complexity grid"),
-the theme is built by handing the spec a `ThemeData` and the working grid:
+## The data and the working grid
+
+The spec is only half of the call. `build_theme` also needs a **`ThemeData`** —
+the point cloud and its per-point attributes — plus the two 1-D **ascending**
+coordinate axes of the working grid (`grid_x` east, `grid_y` north) and the
+modelled-layer count.
+
+In production you do not build `ThemeData` by hand: the adapter writes the
+three-file bundle specified in [`theme_format.md`](theme_format.md) and the
+loader returns the object, together with the layer count and provenance the
+manifest records.
+
+```python
+from geosigma.themes import load_theme_data
+
+loaded = load_theme_data("refraction_bedrock/manifest.yaml")
+data, n_layers = loaded.data, loaded.n_layers
+```
+
+To keep this example runnable with no files on disk, we instead construct the
+equivalent `ThemeData` inline — twelve synthetic soundings on a 1 km × 750 m grid
+of 25 m cells, with three bedrock-ward boundaries:
+
+```python
+n_layers = 3
+grid_x = np.arange(0.0, 1000.0, 25.0)   # 40 columns, 25 m cells, ascending east
+grid_y = np.arange(0.0, 750.0, 25.0)    # 30 rows, ascending north
+
+rng = np.random.default_rng(0)
+n_points = 12
+xs = rng.uniform(100.0, 900.0, n_points)
+ys = rng.uniform(100.0, 650.0, n_points)
+
+# Choice 12 (column mapping) lands here: each attribute the spec declares must
+# be present, under the name the spec uses.
+#
+# "depth" is per-point AND per-layer, so it is (n_points, n_layers): three
+# boundaries at roughly 20 / 45 / 80 m with sounding-to-sounding scatter.
+depth = np.array([20.0, 45.0, 80.0]) + rng.normal(0.0, 4.0, (n_points, n_layers))
+
+# "spread_reach" is a property of the sounding, not of the layer, so a 1-D
+# (n_points,) array suffices — the engine broadcasts it across layers.
+spread_reach = rng.uniform(60.0, 140.0, n_points)
+
+data = ThemeData(
+    xs=xs,
+    ys=ys,
+    attributes={"depth": depth, "spread_reach": spread_reach},
+    complexity=None,          # choice 3: no complexity grid -> uniform class 1
+)
+```
+
+With `complexity=None` (equivalently `complexity: none` in a manifest — choice
+3's "no complexity grid"), the theme is built by handing the spec the data and
+the working grid:
 
 ```python
 grid = build_theme(data, spec, grid_x, grid_y, n_layers)
 ```
 
-The **preparation-layer choices (9–12)** are made in the adapter that produces
-`data` — writing the three-file bundle specified in
-[`theme_format.md`](theme_format.md):
+The result is a `(ny, nx, n_layers)` variance grid — here `(30, 40, 3)`. With
+this seed it comes out as 557 cells carrying an interpretable variance (roughly
+2–78 m², growing with depth as choice 6 dictates), 2588 cells at the
+`NODATA_VARIANCE` sentinel where the theme has nothing to say, and 455 cells at
+`inf`.
+
+With real data the synthetic block above is replaced by the bundle, and the
+**preparation-layer choices (9–12)** are made in the adapter that writes it —
+the three-file format specified in [`theme_format.md`](theme_format.md):
 
 - **Choice 9 (attribute gaps).** `spread_reach` is measured for every sounding, so
   nothing needs filling. Were some missing and estimable from a known signal-limiting
