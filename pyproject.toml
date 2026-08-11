@@ -41,13 +41,22 @@ classifiers = [
 # validation harness under examples/, so they are deliberately not declared here.
 # `affine` is imported directly by utils/grid_meta.py, so it is named explicitly
 # rather than leaned on as a transitive rasterio dependency.
+#
+# Lower bounds only, no upper caps (deferred). The bounds mark the oldest
+# release each dependency is expected to work against, so an under-old
+# environment fails as a clear resolver message instead of an AttributeError
+# mid-run. They are deliberately not tight: the API surface this library
+# actually touches is small and long-stable — pandas is only `read_csv` and
+# `.to_numpy`, rasterio only `open` and `transform.from_origin`, affine only the
+# `Affine` constructor, pyyaml only `safe_load`/`safe_dump`, and nothing uses a
+# numpy API removed in 2.0.
 dependencies = [
-    "numpy",
-    "pandas",
-    "matplotlib",
-    "rasterio",
-    "affine",
-    "pyyaml",
+    "numpy>=1.24",
+    "pandas>=1.5",
+    "matplotlib>=3.6",
+    "rasterio>=1.3",
+    "affine>=2.3",
+    "pyyaml>=6",
 ]
 
 [project.optional-dependencies]
