@@ -42,7 +42,8 @@ classifiers = [
 # `affine` is imported directly by utils/grid_meta.py, so it is named explicitly
 # rather than leaned on as a transitive rasterio dependency.
 #
-# Lower bounds only, no upper caps (deferred). The bounds mark the oldest
+# Lower bounds only, no upper caps (deferred — see docs/deferred_decisions.md
+# for the capping recommendation on file). The bounds mark the oldest
 # release each dependency is expected to work against, so an under-old
 # environment fails as a clear resolver message instead of an AttributeError
 # mid-run. They are deliberately not tight: the API surface this library

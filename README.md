@@ -80,30 +80,6 @@ GeoSigma is developed at the Geological Survey of Denmark and Greenland (GEUS) a
 
 Some core functions are adapted from the open-source [mGstat](https://github.com/cultpenguin/mGstat) MATLAB library (T.M. Hansen); those files carry individual credit notices.
 
-## Development notes
-
-### Packaging — deferred decisions
-
-Two packaging decisions are deliberately postponed. They are recorded here so
-they are not rediscovered by accident.
-
-**A `requirements-paper.txt` lockfile, at figure-generation time (not before).**
-Dependencies currently declare lower bounds only (`pyproject.toml`); upper caps
-are deferred. Version *ranges* do not make results reproducible — only exact
-pins do. So when the figures for the accompanying Hydrogeology Journal article
-are generated, freeze that environment to `requirements-paper.txt` and cite it
-in the article's data-availability statement. Writing the lockfile now would
-record today's environment rather than the one that produced the published
-results, which is precisely the substitution that makes a reproducibility claim
-untrue. Doing it at figure time is what makes the claim literally correct.
-
-**v0.2.0 — make matplotlib an optional extra.** `geosigma/inpox.py` imports
-`matplotlib.pyplot` at module level, so `import geosigma` pulls the full
-plotting stack into any process that only wants the geostatistical core.
-Deferring that import into `visualize_transfer_function` (its only consumer)
-would let matplotlib move out of the required dependencies and into an extra.
-Held back from v0.1.0 because it changes library import behaviour.
-
 ## License
 
 GNU General Public License v3.0 — see `LICENSE`.

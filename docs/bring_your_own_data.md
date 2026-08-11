@@ -269,8 +269,9 @@ to set to the no-information sentinel (the deep/reach cutoff). The **shallow
 cutoff** is conceptually part of this same choice — the minimum depth below which
 the source is untrustworthy — but in the current code it is implemented as a
 sentinel *inside* `var0_fn` rather than in `mask_fn`. *(Implementation note: this
-split is historical; unifying the shallow floor into `mask_fn` is a possible
-v0.2.0 polish, deferred to avoid numeric changes near release.)*
+split is historical; unifying the shallow floor into `mask_fn` is a v0.2.0
+polish, deferred to avoid numeric changes near release — see
+[`deferred_decisions.md`](deferred_decisions.md).)*
 
 **Reasoning for your setting.** Every source has a domain of validity. The **deep
 limit** is usually a depth-of-investigation or penetration: below it the signal no
