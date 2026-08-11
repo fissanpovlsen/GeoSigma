@@ -82,6 +82,11 @@ allowed to speak for ground it never sampled. (The correlation *range*, choice 3
 governs how fast certainty then decays with distance; `search_radius` only bounds
 how far the search looks.)
 
+Cells whose window turns up no point at all are the main source of the
+`NODATA_VARIANCE` sentinel in a finished grid, and cells inside the window but
+outside the plateau are the main source of `inf` — see *Two kinds of "no
+information"* under choice 7 for why a grid full of both is normal.
+
 **Danish illustration [HJ citation].** PACES `search_radius = 1`; reflection
 seismic `search_radius = 8`; the TEM methods and the borehole logs use `6`.
 
@@ -281,6 +286,55 @@ depth-of-investigation is shallower than the boundary (`doi < depth`); the logs
 mask where the logged thickness is less than the boundary depth; reflection seismic
 masks layers thinner than 100 m. Shallow floors vary by method — e.g. SkyTEM
 excludes boundaries above 5 m, the resistivity log above 10 m.
+
+### Two kinds of "no information": the sentinel and `inf`
+
+A theme grid you have just built will normally contain **both** `100000` and
+`inf`, often in large numbers. Neither is an error, and they are not the same
+thing. A first build that comes out mostly `inf` reads like a failure; it is not.
+
+`build_theme` computes `variance = 1 / cert`, so the two values are just the two
+ways `cert` can vanish:
+
+| value | cause | meaning |
+|---|---|---|
+| `NODATA_VARIANCE` (`100000`) | `cert` came out `NaN` — no data point anywhere in the cell's search window (choice 1), or an unknown complexity class — **or** `mask_fn` / `active_layers` fired (choices 7, 8) | the theme claims *near*-total ignorance, as a finite number |
+| `inf` | `cert` came out exactly `0` | the theme claims *total* ignorance |
+
+`cert` hits exactly zero when a data point **is** inside the search window but
+its distance exceeds the plateau half-width (choice 5) under a plateau-limited
+kernel. `ILM_sep2023` and `ILM_oct2023` — and the example kernel below — are
+written in the multiplicative form `(dist <= width) * sill * exp(...)`, which is
+literally `0 * something` outside the plateau. (This form is deliberate and
+matches the MATLAB: see the note in
+`geosigma/themes/certainty_functions.py`. The `np.where`-based kernels
+`FRAFA_apr2023` and `RBM_oct2023` never return an analytic zero, but their
+Gaussian tail can still underflow to `0` at a large enough `dist / range_`,
+giving the same `inf`.)
+
+So `inf` cells are the annulus between the plateau edge and the search-window
+edge. If nearly your whole grid is `inf`, the usual cause is a plateau that is
+small relative to your cell size while `search_radius` is comparatively wide —
+a statement your spec is making, not a bug. Widen the plateau only if the source
+really is directly informative that far out.
+
+**It is harmless downstream, and deliberately so.** Themes combine as parallel
+precisions, `1 / Σ(1/θ)`, and `1/inf` is exactly `0`: an `inf` cell contributes
+*no* precision, which is precisely the right behaviour for "this theme knows
+nothing here". `combine_variances` handles it directly; nothing needs cleaning
+up first. Note the asymmetry with the finite sentinel: `100000` contributes a
+small but **non-zero** precision of `1e-5`, so a cell where all *N* themes are
+at the sentinel combines to `100000 / N` rather than to infinity. That is
+faithful to the reference implementation, which uses the same `100000`
+throughout.
+
+The one place `inf` does bite is **plotting** — it flattens any automatic colour
+scale. Mask it out when you look at a grid:
+
+```python
+finite = np.isfinite(grid) & (grid < 100000.0)
+plt.imshow(np.where(finite, grid, np.nan)[:, :, 0], origin="lower")
+```
 
 ## Choice 8 — Which boundaries the source constrains at all (active layers)
 
@@ -539,8 +593,11 @@ grid = build_theme(data, spec, grid_x, grid_y, n_layers)
 The result is a `(ny, nx, n_layers)` variance grid — here `(30, 40, 3)`. With
 this seed it comes out as 557 cells carrying an interpretable variance (roughly
 2–78 m², growing with depth as choice 6 dictates), 2588 cells at the
-`NODATA_VARIANCE` sentinel where the theme has nothing to say, and 455 cells at
-`inf`.
+`NODATA_VARIANCE` sentinel — 2454 with no sounding in the search window, 134
+beyond `spread_reach` — and 455 cells at `inf`, the ring of cells that have a
+sounding in the window but lie outside its 60 m plateau. Twelve soundings over
+1200 cells is sparse, so a grid dominated by those two is exactly what the spec
+describes; see *Two kinds of "no information"* under choice 7.
 
 With real data the synthetic block above is replaced by the bundle, and the
 **preparation-layer choices (9–12)** are made in the adapter that writes it —
