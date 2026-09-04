@@ -51,6 +51,40 @@ produce the published results — precisely the substitution that makes a
 reproducibility claim untrue. Writing it at figure time is what makes the claim
 literally correct, so the timing is the whole point of the decision.
 
+### Citation metadata — add DOIs to `CITATION.cff` only once they exist
+
+`CITATION.cff` currently describes the software alone: names, ORCIDs, ISC
+licence, repository URL. It carries no `doi`, no `date-released`, no
+`references` and no `preferred-citation`. Placeholder entries for the
+Hydrogeology Journal article were removed rather than left commented out.
+
+**Why not now.** CITATION.cff is machine-readable in a way that markdown notes
+are not — GitHub renders it under "Cite this repository", Zenodo consumes it
+when minting a DOI, and reference managers parse it. A placeholder for an
+unsubmitted paper can therefore be surfaced and cited as though the paper
+exists. A `[HJ citation]` marker in prose is read by a human as provisional; a
+CFF field is not.
+
+**What to add, and when.**
+
+- **Zenodo DOI + `date-released`** — after the first release. The `v0.1.0` tag
+  mints the DOI; it does not exist before then. Add the concept DOI, so the
+  citation resolves to the latest version rather than to one frozen release.
+- **Hydrogeology Journal article** — once *accepted and assigned a DOI*, not on
+  submission. Add it under `references:` (`type: article`). It is the
+  scientific foundation, a separate work being cited, not the preferred way to
+  cite this software.
+- **`preferred-citation`** — reserve for a software paper about GeoSigma
+  itself, e.g. JOSS, if one is ever written. `preferred-citation` overrides how
+  GitHub and reference tools cite the repository, so pointing it at a
+  methods article would misdirect anyone citing the code.
+
+Re-validate after any edit with `cffconvert --validate -i CITATION.cff`.
+`cffconvert` is not a project dependency; install it in a throwaway
+environment rather than in the `geosigma` env, because it pins
+`jsonschema<4` and installing it downgrades that package out from under
+Spyder and nbformat.
+
 ### matplotlib as an optional extra — v0.2.0
 
 `geosigma/inpox.py` imports `matplotlib.pyplot` at module level, so
