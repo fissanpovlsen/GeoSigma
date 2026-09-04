@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+title: GeoSigma
+abstract: >-
+  A model-agnostic Python library for generating hydrostratigraphic
+  realizations from manually interpreted layer models using geostatistical
+  simulation. Includes a variance-map theme engine for combining
+  heterogeneous geophysical and borehole data sources into per-layer
+  uncertainty maps.
+type: software
+authors:
+  - given-names: Rasmus Bødker
+    family-names: Madsen
+    email: rbm@geus.dk
+    affiliation: "Geological Survey of Denmark and Greenland (GEUS)"
+    orcid: "https://orcid.org/0000-0001-8538-7491"
+  - given-names: Mathias Busk
+    family-names: Nielsen
+    email: dahl@niras.dk
+    affiliation: NIRAS
+    orcid: "https://orcid.org/0000-0003-4816-0241"
+  - given-names: Frederik Alexander
+    family-names: Falk
+    email: frederikfalk@geo.au.dk
+    affiliation: "Department of Geoscience, Aarhus University"
+    orcid: "https://orcid.org/0009-0003-1023-5161"
+version: 0.1.0
+license: ISC
+repository-code: "https://github.com/rbm-geus/GeoSigma"
+url: "https://github.com/rbm-geus/GeoSigma"
+# date-released and doi are added in a follow-up commit once the v0.1.0 tag
+# mints the Zenodo DOI.
+keywords:
+  - geostatistics
+  - hydrogeology
+  - hydrostratigraphy
+  - uncertainty quantification
+  - kriging
+  - geophysics
+  - Python
+
+# Optional: add once you have the Springer paper's full author list, so the
+# mathematical foundation is cited alongside the software.
+#
+# references:
+#   - type: article
+#     title: "TODO_TITLE"
+#     doi: "10.1007/s11004-025-10263-9"
+#     journal: "Mathematical Geosciences"
+#     year: 2025
+#     authors:
+#       - given-names: TODO
+#         family-names: TODO

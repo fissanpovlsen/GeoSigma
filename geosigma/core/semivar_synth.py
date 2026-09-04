@@ -1,3 +1,7 @@
+# Translated from mGstat's semivar_synth.m
+# (https://github.com/AUProbGeo/mGstat), MIT licensed.
+# Copyright (c) 2024 Thomas Mejer Hansen. See THIRD_PARTY_NOTICES.md.
+
 import numpy as np
 
 

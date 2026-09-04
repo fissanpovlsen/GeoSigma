@@ -7,8 +7,10 @@ name = "geosigma"
 version = "0.1.0"
 description = "Geostatistical uncertainty modelling of 3D subsurface layer boundaries in hydrostratigraphic models."
 readme = "README.md"
-license = "GPL-3.0-or-later"
-license-files = ["LICENSE"]
+license = "ISC"
+# THIRD_PARTY_NOTICES.md ships alongside LICENSE so the mGstat MIT notice
+# travels with built distributions, as that license requires.
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 requires-python = ">=3.10"
 authors = [
     { name = "Rasmus Bødker Madsen", email = "rbm@geus.dk" },

@@ -4,6 +4,9 @@ import numpy as np
 def get_reals_cholesky(cov, Nreals=1, m0=None, verbose=False):
     """
     Generate realizations from a covariance matrix using Cholesky decomposition.
+    Translated from ``get_reals_cholesky.m`` in the N-ret hydrostratigraphic
+    MATLAB codebase (see ``matlab_reference/``); the ``m0`` and ``verbose``
+    arguments are additions in this implementation.
 
     Parameters
     ----------

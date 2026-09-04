@@ -15,6 +15,8 @@ def local_kriging_setup_img(
 ):
     """
     Set up local kriging matrices for image-based inversion or estimation.
+    Translated from ``local_kriging_setup_img.m`` in the N-ret hydrostratigraphic
+    MATLAB codebase (see ``matlab_reference/``).
 
     Parameters
     ----------

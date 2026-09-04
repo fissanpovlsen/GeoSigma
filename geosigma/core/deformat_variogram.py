@@ -1,3 +1,7 @@
+# Translated from mGstat's deformat_variogram.m
+# (https://github.com/AUProbGeo/mGstat), MIT licensed.
+# Copyright (c) 2024 Thomas Mejer Hansen. See THIRD_PARTY_NOTICES.md.
+
 import re
 
 # import numpy as np
