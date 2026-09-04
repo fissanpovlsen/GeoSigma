@@ -8,7 +8,6 @@ import numpy as np
 def semivar_synth(V, d):
     """
     Compute semivariance for a given variogram model.
-    This code is based upon a translation of mGstat, a Matlab geostatistical code library by Thomas Mejer Hansen
 
     Parameters
     ----------

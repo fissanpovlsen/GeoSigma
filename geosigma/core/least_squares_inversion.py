@@ -9,7 +9,6 @@ import time
 def least_squares_inversion(G, Cm, Cd, m0, d0, type=2, use_tqdm=True):
     """
     Linear least-squares inversion following Tarantola (2005), Eq. (16-17)
-    Based upon a Matlab implementation in the "mGstat" package by Thomas Mejer Hansen
 
     Parameters
     ----------

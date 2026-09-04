@@ -11,7 +11,6 @@ from .deformat_variogram import deformat_variogram
 def precal_cov(pos1, pos2, V, options=None):
     """
     Compute covariance matrix based on variogram(s).
-    This code is based upon a translation of mGstat, a Matlab geostatistical code library by Thomas Mejer Hansen
 
     Parameters
     ----------
