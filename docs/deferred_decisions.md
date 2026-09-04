@@ -53,27 +53,30 @@ literally correct, so the timing is the whole point of the decision.
 
 ### Citation metadata — add DOIs to `CITATION.cff` only once they exist
 
-`CITATION.cff` currently describes the software alone: names, ORCIDs, ISC
-licence, repository URL. It carries no `doi`, no `date-released`, no
-`references` and no `preferred-citation`. Placeholder entries for the
-Hydrogeology Journal article were removed rather than left commented out.
+`CITATION.cff` describes the software — names, ORCIDs, ISC licence, repository
+URL — and cites one published work under `references:`: the *Mathematical
+Geosciences* article (DOI `10.1007/s11004-025-10263-9`, online 20 February
+2026) that documents the mathematics this library implements. It carries no
+`doi` of its own, no `date-released`, and no `preferred-citation`.
 
-**Why not now.** CITATION.cff is machine-readable in a way that markdown notes
-are not — GitHub renders it under "Cite this repository", Zenodo consumes it
-when minting a DOI, and reference managers parse it. A placeholder for an
+**The rule.** A citation entry goes in when the work it names exists and has a
+DOI, and not before. CITATION.cff is machine-readable in a way that markdown
+notes are not — GitHub renders it under "Cite this repository", Zenodo consumes
+it when minting a DOI, and reference managers parse it. A placeholder for an
 unsubmitted paper can therefore be surfaced and cited as though the paper
 exists. A `[HJ citation]` marker in prose is read by a human as provisional; a
-CFF field is not.
+CFF field is not. (An earlier `TODO_TITLE` stub for the Mathematical
+Geosciences article was removed on those grounds and then restored in full once
+the DOI was verified against Crossref — verify, then cite.)
 
-**What to add, and when.**
+**Still outstanding.**
 
 - **Zenodo DOI + `date-released`** — after the first release. The `v0.1.0` tag
   mints the DOI; it does not exist before then. Add the concept DOI, so the
   citation resolves to the latest version rather than to one frozen release.
-- **Hydrogeology Journal article** — once *accepted and assigned a DOI*, not on
-  submission. Add it under `references:` (`type: article`). It is the
-  scientific foundation, a separate work being cited, not the preferred way to
-  cite this software.
+- **The Hydrogeology Journal article** — not yet submitted. Add it as a second
+  entry under `references:` once *accepted and assigned a DOI*, not on
+  submission.
 - **`preferred-citation`** — reserve for a software paper about GeoSigma
   itself, e.g. JOSS, if one is ever written. `preferred-citation` overrides how
   GitHub and reference tools cite the repository, so pointing it at a
