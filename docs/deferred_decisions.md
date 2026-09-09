@@ -41,7 +41,7 @@ only `safe_load` / `safe_dump`, and nothing uses a numpy API removed in 2.0.
 
 ### `requirements-paper.txt` — write it at figure-generation time, not before
 
-When the figures for the accompanying Hydrogeology Journal article are
+When the figures for the accompanying forthcoming publication are
 generated, freeze that environment to a `requirements-paper.txt` of exact
 versions and cite it in the article's data-availability statement.
 
@@ -64,7 +64,7 @@ DOI, and not before. CITATION.cff is machine-readable in a way that markdown
 notes are not — GitHub renders it under "Cite this repository", Zenodo consumes
 it when minting a DOI, and reference managers parse it. A placeholder for an
 unsubmitted paper can therefore be surfaced and cited as though the paper
-exists. A `[HJ citation]` marker in prose is read by a human as provisional; a
+exists. A `[methods citation]` marker in prose is read by a human as provisional; a
 CFF field is not. (An earlier `TODO_TITLE` stub for the Mathematical
 Geosciences article was removed on those grounds and then restored in full once
 the DOI was verified against Crossref — verify, then cite.)
@@ -74,9 +74,8 @@ the DOI was verified against Crossref — verify, then cite.)
 - **Zenodo DOI + `date-released`** — after the first release. The `v0.1.0` tag
   mints the DOI; it does not exist before then. Add the concept DOI, so the
   citation resolves to the latest version rather than to one frozen release.
-- **The Hydrogeology Journal article** — not yet submitted. Add it as a second
-  entry under `references:` once *accepted and assigned a DOI*, not on
-  submission.
+- **The forthcoming methods publication** — add it as a second entry under
+  `references:` once *accepted and assigned a DOI*, not on submission.
 - **`preferred-citation`** — reserve for a software paper about GeoSigma
   itself, e.g. JOSS, if one is ever written. `preferred-citation` overrides how
   GitHub and reference tools cite the repository, so pointing it at a

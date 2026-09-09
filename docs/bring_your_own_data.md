@@ -25,8 +25,8 @@ For each choice you get: the **question** in plain terms, the **parameter(s)**
 that express the answer, **how to reason about it** for your own setting, and the
 **Danish answers** as worked illustrations. The Danish values come from the
 national hydrostratigraphic model (the DK-model); their scientific justification
-is the subject of the accompanying Hydrogeology Journal article — cited below as
-**[HJ citation]** (placeholder, to be filled on publication).
+is the subject of a forthcoming publication — cited below as
+**[methods citation]** (placeholder, to be filled on publication).
 
 > **File formats are covered elsewhere.** How the point data, manifest, and
 > complexity grid are laid out on disk — column conventions, the `attr__LNN`
@@ -87,7 +87,7 @@ Cells whose window turns up no point at all are the main source of the
 outside the plateau are the main source of `inf` — see *Two kinds of "no
 information"* under choice 7 for why a grid full of both is normal.
 
-**Danish illustration [HJ citation].** PACES `search_radius = 1`; reflection
+**Danish illustration [methods citation].** PACES `search_radius = 1`; reflection
 seismic `search_radius = 8`; the TEM methods and the borehole logs use `6`.
 
 ## Choice 2 — Combining coincident points (the reducer)
@@ -111,7 +111,7 @@ survey type) where averaging is meaningless. If your points never coincide, the
 reducer rarely bites — but set it deliberately, because dense data will exercise
 it.
 
-**Danish illustration [HJ citation].** Interpreted depth is always reduced by
+**Danish illustration [methods citation].** Interpreted depth is always reduced by
 `mean`. Layer thickness is reduced by `min` for the logs and SkyTEM, `mean` for
 many-layer and towed TEM, and `max` for reflection seismic. MEP's acquisition
 type uses `first`.
@@ -143,7 +143,7 @@ Denmark, the pre-Quaternary) has its own correlation behaviour, split the layers
 into two `RangeGroup`s. The split index itself is a property of your model, not of
 the theme.
 
-**Danish illustration [HJ citation].** Most themes use ranges of 500 / 400 / 250 /
+**Danish illustration [methods citation].** Most themes use ranges of 500 / 400 / 250 /
 100 m for complexity classes 1–4, with a pre-Quaternary override of 500 m for the
 deep layers. Towed TEM instead uses a flat 100 m for every class and depth.
 
@@ -204,7 +204,7 @@ the spec exactly like a built-in: `cert_fun_name="MYORG_jan2026"`. New library
 kernels belong in `geosigma/themes/certainty_functions.py`, never scattered across
 theme scripts.
 
-**Danish illustration [HJ citation].** PACES and reflection seismic use
+**Danish illustration [methods citation].** PACES and reflection seismic use
 `FRAFA_apr2023` (a flat plateau, Gaussian decay outside); the TEM and log themes
 use `ILM_sep2023` (Gaussian decay measured from the plateau edge).
 
@@ -226,7 +226,7 @@ depth-dependent width captures that; if not, a constant is right. Return a const
 for depth-independent support, or a function of `depth` for a footprint that
 widens.
 
-**Danish illustration [HJ citation].** The logs use a constant 150; PACES/PACEP/MEP
+**Danish illustration [methods citation].** The logs use a constant 150; PACES/PACEP/MEP
 a constant 75; reflection seismic a constant 1 (essentially no plateau). SkyTEM
 uses `max(2·depth, 75)` and the other TEM methods `max(depth, 75)` — a plateau that
 widens with depth.
@@ -253,7 +253,7 @@ a real, defensible uncertainty in the units of the boundary (metres² of depth
 variance) — because this number, not a weight, is what sets how much the method
 counts in the combination.
 
-**Danish illustration [HJ citation].** Reflection seismic uses a constant
+**Danish illustration [methods citation].** Reflection seismic uses a constant
 `(0.5·15)² = 56.25`; the gamma log a constant `2.25`; PACES a depth-growing
 `(0.5·max(2, 0.25·depth))²`; the thickness-driven TEM methods `(0.5·1.2·thick)²`;
 MEP switches formula by acquisition type (Wenner-2D vs other).
@@ -282,7 +282,7 @@ layer thickness): below it, likewise, no information. State both honestly; maski
 too little is worse than masking too much, because an overconfident wrong value
 propagates into the combination as if it were evidence.
 
-**Danish illustration [HJ citation].** The TEM methods mask where the
+**Danish illustration [methods citation].** The TEM methods mask where the
 depth-of-investigation is shallower than the boundary (`doi < depth`); the logs
 mask where the logged thickness is less than the boundary depth; reflection seismic
 masks layers thinner than 100 m. Shallow floors vary by method — e.g. SkyTEM
@@ -356,7 +356,7 @@ subset is a property of *each dataset* rather than the method in general, comput
 during preparation and pass it through `spec_params`. Most themes leave this
 `None`.
 
-**Danish illustration [HJ citation].** Reflection seismic is restricted to the
+**Danish illustration [methods citation].** Reflection seismic is restricted to the
 layers whose geophysical thickness exceeds 1000 m (a data-derived set); every other
 theme applies to all modelled layers.
 
@@ -399,7 +399,7 @@ location-independent and belongs in `post_reduce_fn`. Putting a location-depende
 fill downstream silently corrupts it; putting a constant fill upstream just makes
 extra work. If nothing is missing, you need neither.
 
-**Danish illustration [HJ citation].** The airborne and few/many/towed TEM methods
+**Danish illustration [methods citation].** The airborne and few/many/towed TEM methods
 estimate a missing depth-of-investigation from the Palaeogene conductive clay,
 capping it at the clay top where the clay is at least ~10 m thick and otherwise
 falling back to the mean recorded depth-of-investigation (150 m if none is
@@ -422,7 +422,7 @@ whatever your data quality demands. The point is that the cut is an explicit,
 recorded decision — a reader must be able to reproduce your row set — not an
 incidental side effect of which files you happened to load.
 
-**Danish illustration [HJ citation].** Points are kept where the survey year does
+**Danish illustration [methods citation].** Points are kept where the survey year does
 not exceed the model year; reflection seismic and the borehole logs read the survey
 year from a `d_year` column, the geophysical soundings from `m_year`.
 
@@ -439,7 +439,7 @@ duplicated exports — must be collapsed, and the rule is a real choice: keep th
 most recent, keep the first, or average. Whatever you choose, apply it consistently
 and record it, because it changes which measurement speaks for that location.
 
-**Danish illustration [HJ citation].** Records are de-duplicated on their `(x, y)`
+**Danish illustration [methods citation].** Records are de-duplicated on their `(x, y)`
 coordinates, keeping the last occurrence (matching the reference pipeline's
 unique-by-rows behaviour). The rule is the same for all ten themes.
 
@@ -462,7 +462,7 @@ value is more honest than a spurious per-point column. Record which columns fed
 which attributes (and whether they are raw or already processed) in the provenance
 notes.
 
-**Danish illustration [HJ citation].** Interpreted depths and thicknesses come from
+**Danish illustration [methods citation].** Interpreted depths and thicknesses come from
 the model's per-layer depth and thickness arrays; the depth-of-investigation from a
 `doilower` column; MEP's acquisition type from a `datasubtype` column (1 if it
 begins "wen", else 0). The two borehole-log themes read UTM coordinates from
