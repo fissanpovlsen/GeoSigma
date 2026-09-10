@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import scipy.io as sio
-
+from matio import load_from_mat
 def get_manyTEM_theme(UTM_X, UTM_Y, terrain, complexity, reg, include_peatlands, Npreq, NPL, Nlay):
     # Load data based on region
     region_files = {
@@ -14,7 +14,8 @@ def get_manyTEM_theme(UTM_X, UTM_Y, terrain, complexity, reg, include_peatlands,
         raise ValueError("Invalid region specified")
 
     in_data = sio.loadmat(f'data/{filename}')
-    Gmod = pd.read_csv('data/Gmod_pos.csv')
+    Gmod = load_from_mat(f'data/{filename}')
+    Gmod = Gmod['Gmod_pos']
 
     # Rearrange data
     if reg == 'Fyn':
